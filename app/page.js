@@ -1,0 +1,1200 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import DashboardLayout from "./components/DashboardLayout";
+import {
+  FolderIcon,
+  PencilIcon,
+  FlashIcon,
+  DollarIcon,
+  SearchIcon,
+  DashboardIcon,
+  TrendUpIcon,
+  BuildingIcon,
+  MessageIcon,
+  LinkIcon,
+  TrophyIcon,
+  CalculatorIcon
+} from "./components/Icons";
+
+// Custom SVG Donut Chart Component
+const SVGDonutChart = ({ data, totalLabel = "مشروع", colors = [] }) => {
+  const total = data.reduce((acc, curr) => acc + curr.value, 0);
+  const size = 150;
+  const strokeWidth = 16;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  let accumulatedPercentage = 0;
+
+  return (
+    <div className="donut-chart-container">
+      <div className="donut-wrapper">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          {/* Base background circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="transparent"
+            stroke="#f1f5f9"
+            strokeWidth={strokeWidth}
+          />
+          {/* Segments */}
+          {data.map((item, idx) => {
+            const percentage = total > 0 ? (item.value / total) * 100 : 0;
+            const strokeDashoffset = circumference - (percentage / 100) * circumference;
+            const strokeDasharray = circumference;
+            const rotation = (accumulatedPercentage / 100) * 360 - 90;
+            accumulatedPercentage += percentage;
+
+            const color = colors[idx % colors.length] || "#cbd5e1";
+
+            return (
+              <circle
+                key={idx}
+                cx={size / 2}
+                cy={size / 2}
+                r={radius}
+                fill="transparent"
+                stroke={color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={strokeDasharray}
+                strokeDashoffset={strokeDashoffset}
+                transform={`rotate(${rotation} ${size / 2} ${size / 2})`}
+                strokeLinecap="round"
+                className="donut-segment"
+                style={{
+                  transition: "stroke-dashoffset 0.5s ease-in-out, stroke-width 0.2s",
+                  cursor: "pointer"
+                }}
+              >
+                <title>{`${item.name}: ${item.value} (${percentage.toFixed(1)}%)`}</title>
+              </circle>
+            );
+          })}
+        </svg>
+        {/* Center label */}
+        <div className="donut-center-label">
+          <span className="donut-center-val">{total}</span>
+          <span className="donut-center-lbl">{totalLabel}</span>
+        </div>
+      </div>
+
+      {/* Legend list */}
+      <div className="donut-legend">
+        {data.map((item, idx) => {
+          const color = colors[idx % colors.length] || "#cbd5e1";
+          const percentage = total > 0 ? (item.value / total) * 100 : 0;
+          return (
+            <div key={idx} className="legend-item">
+              <span className="legend-bullet" style={{ backgroundColor: color }}></span>
+              <span className="legend-name" title={item.name}>{item.name}</span>
+              <span className="legend-value">{item.value}</span>
+              <span className="legend-percentage">({percentage.toFixed(0)}%)</span>
+            </div>
+          );
+        })}
+      </div>
+      <style jsx>{`
+        .donut-chart-container {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 8px;
+          flex-wrap: wrap;
+          justify-content: center;
+          width: 100%;
+        }
+        .donut-wrapper {
+          position: relative;
+          width: 150px;
+          height: 150px;
+          flex-shrink: 0;
+        }
+        .donut-segment:hover {
+          stroke-width: 18px;
+        }
+        .donut-center-label {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+        }
+        .donut-center-val {
+          font-size: 1.4rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          line-height: 1;
+        }
+        .donut-center-lbl {
+          font-size: 0.65rem;
+          color: var(--text-muted);
+          font-weight: 700;
+          margin-top: 2px;
+        }
+        .donut-legend {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          flex: 1;
+          min-width: 120px;
+        }
+        .legend-item {
+          display: flex;
+          align-items: center;
+          font-size: 0.7rem;
+          color: var(--text-secondary);
+          gap: 6px;
+          font-weight: 600;
+        }
+        .legend-bullet {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        .legend-name {
+          flex: 1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 120px;
+          text-align: right;
+        }
+        .legend-value {
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+        .legend-percentage {
+          color: var(--text-muted);
+          font-size: 0.6rem;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default function DashboardHome() {
+  const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [ragStats, setRagStats] = useState([]);
+  const [heiaRagStats, setHeiaRagStats] = useState([]);
+  const [transformationRagStats, setTransformationRagStats] = useState([]);
+  const [sectorStats, setSectorStats] = useState([]);
+  const [latestComments, setLatestComments] = useState([]);
+  const [topPriorityProjects, setTopPriorityProjects] = useState([]);
+  const [budgetSourcesStats, setBudgetSourcesStats] = useState(null);
+  const [classificationStats, setClassificationStats] = useState([]);
+  const [heiaClassificationStats, setHeiaClassificationStats] = useState([]);
+  const [transformationClassificationStats, setTransformationClassificationStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Tabular projects list details (Modal popout)
+  const [activeCard, setActiveCard] = useState("active_contracts");
+  const [stageProjects, setStageProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [listSearchTerm, setListSearchTerm] = useState("");
+  const [popoutOpen, setPopoutOpen] = useState(false);
+
+  const router = useRouter();
+
+  // Load dashboard statistics
+  useEffect(() => {
+    setMounted(true);
+    const storedUser = localStorage.getItem("pha_user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/portfolio?type=summary");
+        const data = await res.json();
+        if (data.success) {
+          setStats(data.summary);
+          setRagStats(data.activeRagStats || []);
+          setHeiaRagStats(data.heiaRagStats || []);
+          setTransformationRagStats(data.transformationRagStats || []);
+          setSectorStats(data.sectorStats || []);
+          setLatestComments(data.latestComments || []);
+          setTopPriorityProjects(data.topPriorityProjects || []);
+          setBudgetSourcesStats(data.budgetSourcesStats || null);
+          setClassificationStats(data.classificationStats || []);
+          setHeiaClassificationStats(data.heiaClassificationStats || []);
+          setTransformationClassificationStats(data.transformationClassificationStats || []);
+        }
+      } catch (err) {
+        console.error("Error loading stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadStats();
+  }, []);
+
+  const loadStageProjects = async (stageKey) => {
+    setProjectsLoading(true);
+    try {
+      const res = await fetch(`/api/portfolio?stage=${stageKey}`);
+      const data = await res.json();
+      if (data.success) {
+        setStageProjects(data.data || []);
+      }
+    } catch (err) {
+      console.error("Error loading stage projects:", err);
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  const handleCardClick = (stageKey) => {
+    setActiveCard(stageKey);
+    setPopoutOpen(true);
+    setListSearchTerm("");
+    loadStageProjects(stageKey);
+  };
+
+  const formatCurrency = (val) => {
+    if (val === undefined || val === null) return "0 ريال";
+    return new Intl.NumberFormat("ar-SA", {
+      style: "currency",
+      currency: "SAR",
+      maximumFractionDigits: 0
+    }).format(val);
+  };
+
+  const getScoreColorClass = (score) => {
+    if (score >= 4.0) return "text-emerald";
+    if (score >= 3.0) return "text-teal";
+    if (score >= 2.0) return "text-yellow";
+    return "text-red";
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("ar-SA", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  const getStageLabel = (stage) => {
+    const labels = {
+      demand_plan: "خطة الطلبات",
+      tendering_procedures: "إجراءات الطرح",
+      priority_contracts: "العقود ذات الأولوية",
+      awarding: "الترسية",
+      contracting: "التعاقد",
+      active_contracts: "العقود النشطة",
+      priority_matrix: "تقييم الأولويات"
+    };
+    return labels[stage] || stage;
+  };
+
+  // Filter project list by search text
+  const filteredStageProjects = stageProjects.filter(p => 
+    p.project_name?.toLowerCase().includes(listSearchTerm.toLowerCase()) ||
+    p.sector?.toLowerCase().includes(listSearchTerm.toLowerCase()) ||
+    p.owning_department?.toLowerCase().includes(listSearchTerm.toLowerCase())
+  );
+
+  // SVG Donut Chart Color Arrays
+  const lifecycleColors = ["#06b6d4", "#a855f7", "#ca8a04", "#2563eb", "#0d9488"];
+  const classificationColors = ["#0284c7", "#7c3aed", "#f59e0b", "#10b981", "#ef4444"];
+  const stageStatusColors = ["#0d9488", "#2563eb", "#ca8a04", "#a855f7"];
+  const progressStatusColors = ["#10b981", "#3b82f6", "#f59e0b", "#f97316", "#ef4444", "#06b6d4"];
+
+  // Prepare data arrays for SVG Charts
+  const buildHeiaChartData = () => {
+    if (!budgetSourcesStats?.heia) return [];
+    const h = budgetSourcesStats.heia;
+    return [
+      { name: "خطة الطلبات", value: h.demand_count },
+      { name: "في الطرح", value: h.tendering_count },
+      { name: "الترسية", value: h.awarding_count },
+      { name: "التعاقد", value: h.contracting_count },
+      { name: "نشطة", value: h.active_count }
+    ].filter(x => x.value > 0);
+  };
+
+  const buildTransformationChartData = () => {
+    if (!budgetSourcesStats?.transformation) return [];
+    const t = budgetSourcesStats.transformation;
+    return [
+      { name: "خطة الطلبات", value: t.demand_count },
+      { name: "في الطرح", value: t.tendering_count },
+      { name: "الترسية", value: t.awarding_count },
+      { name: "التعاقد", value: t.contracting_count },
+      { name: "نشطة", value: t.active_count }
+    ].filter(x => x.value > 0);
+  };
+
+  const buildTransformationContractStageData = () => {
+    if (!budgetSourcesStats?.transformation) return [];
+    const t = budgetSourcesStats.transformation;
+    return [
+      { name: "نشطة", value: t.active_count },
+      { name: "التعاقد", value: t.contracting_count },
+      { name: "الترسية", value: t.awarding_count },
+      { name: "في الطرح", value: t.tendering_count }
+    ].filter(x => x.value > 0);
+  };
+
+  const buildProgressStatusData = () => {
+    return heiaRagStats.map(item => ({
+      name: item.status,
+      value: item.count
+    })).filter(x => x.value > 0);
+  };
+
+  const buildTransformationProgressStatusData = () => {
+    return transformationRagStats.map(item => ({
+      name: item.status,
+      value: item.count
+    })).filter(x => x.value > 0);
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-screen flex-center">
+        <div className="spinner"></div>
+        <p>جاري تحميل لوحة التحكم للمحفظة...</p>
+        <style jsx>{`
+          .loading-screen {
+            min-height: 100vh;
+            flex-direction: column;
+            gap: 16px;
+            background: #ffffff;
+            font-family: var(--font-cairo), sans-serif;
+          }
+          .spinner {
+            width: 45px;
+            height: 45px;
+            border: 4px solid rgba(13, 152, 159, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--color-secondary);
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  return (
+    <DashboardLayout activeTab="dashboard">
+      <div className="dashboard-container animate-fade-in">
+        
+        {/* KPI Grid Panel */}
+        <section className="kpi-panel-section">
+          <div className="kpi-grid">
+            
+            {/* Card 1: إجمالي المشاريع */}
+            <div 
+              onClick={() => handleCardClick("all")}
+              className={`kpi-card glass-panel glass-panel-hover ${activeCard === "all" && popoutOpen ? "active-kpi" : ""}`}
+            >
+              <div className="kpi-icon-wrapper cyan-bg">
+                <FolderIcon size={20} className="cyan-text" />
+              </div>
+              <div className="kpi-content">
+                <h3 className="kpi-title">إجمالي المشاريع</h3>
+                <div className="kpi-value">{stats?.total}</div>
+                <div className="kpi-subtext">كافة المشاريع في المحفظة</div>
+              </div>
+            </div>
+
+            {/* Card 2: إجمالي المشاريع القائمة */}
+            <div 
+              onClick={() => handleCardClick("active_contracts")}
+              className={`kpi-card glass-panel glass-panel-hover ${activeCard === "active_contracts" && popoutOpen ? "active-kpi" : ""}`}
+            >
+              <div className="kpi-icon-wrapper teal-bg">
+                <FlashIcon size={20} className="teal-text" />
+              </div>
+              <div className="kpi-content">
+                <h3 className="kpi-title">إجمالي المشاريع القائمة</h3>
+                <div className="kpi-value">{stats?.active?.count}</div>
+                <div className="kpi-subtext">الميزانية: {formatCurrency(stats?.active?.total_cost)}</div>
+              </div>
+            </div>
+
+            {/* Card 3: إجمالي العقود المعتمدة */}
+            <div 
+              onClick={() => handleCardClick("contracting")}
+              className={`kpi-card glass-panel glass-panel-hover ${activeCard === "contracting" && popoutOpen ? "active-kpi" : ""}`}
+            >
+              <div className="kpi-icon-wrapper blue-bg">
+                <PencilIcon size={20} className="blue-text" />
+              </div>
+              <div className="kpi-content">
+                <h3 className="kpi-title">إجمالي العقود المعتمدة</h3>
+                <div className="kpi-value">{stats?.contracting?.count}</div>
+                <div className="kpi-subtext">الميزانية: {formatCurrency(stats?.contracting?.budget)}</div>
+              </div>
+            </div>
+
+            {/* Card 4: إجمالي المشاريع التي تمت ترسيتها */}
+            <div 
+              onClick={() => handleCardClick("awarding")}
+              className={`kpi-card glass-panel glass-panel-hover ${activeCard === "awarding" && popoutOpen ? "active-kpi" : ""}`}
+            >
+              <div className="kpi-icon-wrapper yellow-bg">
+                <TrophyIcon size={20} className="yellow-text" />
+              </div>
+              <div className="kpi-content">
+                <h3 className="kpi-title">إجمالي المشاريع المرساة</h3>
+                <div className="kpi-value">{stats?.awarding?.count}</div>
+                <div className="kpi-subtext">قيد التوقيع والاعتماد</div>
+              </div>
+            </div>
+
+            {/* Card 5: إجمالي المشاريع المطروحة */}
+            <div 
+              onClick={() => handleCardClick("tendering_procedures")}
+              className={`kpi-card glass-panel glass-panel-hover ${activeCard === "tendering_procedures" && popoutOpen ? "active-kpi" : ""}`}
+            >
+              <div className="kpi-icon-wrapper purple-bg">
+                <CalculatorIcon size={20} className="purple-text" />
+              </div>
+              <div className="kpi-content">
+                <h3 className="kpi-title">إجمالي المشاريع المطروحة</h3>
+                <div className="kpi-value">{stats?.tendering?.count}</div>
+                <div className="kpi-subtext">مراجعة كراسات وإعداد عروض</div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* Charts Layout - Two Columns Drill Down System */}
+        <div className="two-columns-dashboard">
+          
+          {/* Column 1: ميزانية الهيئة */}
+          <div className="dashboard-column">
+            
+            <div className="column-focus-header heia-gradient">
+              <h2 className="column-focus-title">مسار ميزانية الهيئة</h2>
+              <p className="column-focus-subtitle">تحليلات ومؤشرات المشاريع الممولة من ميزانية الهيئة العامة</p>
+            </div>
+
+            {/* Chart Block 1: ميزانية الهيئة */}
+            <section className="glass-panel chart-block-section">
+              <div className="chart-header">
+                <h3 className="chart-title">دورة حياة ميزانية الهيئة</h3>
+                <p className="chart-subtitle">توزيع المشاريع الممولة بالكامل من ميزانية الهيئة العامة</p>
+              </div>
+              <div className="chart-body">
+                {budgetSourcesStats ? (
+                  <SVGDonutChart 
+                    data={buildHeiaChartData()} 
+                    totalLabel="مشروع" 
+                    colors={lifecycleColors} 
+                  />
+                ) : (
+                  <p className="no-data">لا توجد بيانات متاحة للمخطط</p>
+                )}
+              </div>
+            </section>
+
+            {/* Chart Block 2: Classification (Heia only) */}
+            <section className="glass-panel chart-block-section">
+              <div className="chart-header">
+                <h3 className="chart-title">التصنيف الفني للهيئة</h3>
+                <p className="chart-subtitle">تصنيفات مشاريع الهيئة حسب نوع الاحتياج التشغيلي والتقني</p>
+              </div>
+              <div className="chart-body">
+                {heiaClassificationStats.length > 0 ? (
+                  <SVGDonutChart 
+                    data={heiaClassificationStats} 
+                    totalLabel="مشروع" 
+                    colors={classificationColors} 
+                  />
+                ) : (
+                  <p className="no-data">لا توجد تصنيفات فنية</p>
+                )}
+              </div>
+            </section>
+
+            {/* Chart Block 3: Progress status (RAG) (Heia only) */}
+            <section className="glass-panel chart-block-section">
+              <div className="chart-header">
+                <h3 className="chart-title">مؤشر التقدم (RAG) للهيئة</h3>
+                <p className="chart-subtitle">الحالة الفعلية وسرعة إنجاز العقود القائمة لميزانية الهيئة</p>
+              </div>
+              <div className="chart-body">
+                {heiaRagStats.length > 0 ? (
+                  <SVGDonutChart 
+                    data={buildProgressStatusData()} 
+                    totalLabel="عقد نشط" 
+                    colors={progressStatusColors} 
+                  />
+                ) : (
+                  <p className="no-data">لا توجد عقود نشطة للهيئة</p>
+                )}
+              </div>
+            </section>
+
+          </div>
+
+          {/* Column 2: برنامج التحول */}
+          <div className="dashboard-column">
+            
+            <div className="column-focus-header trans-gradient">
+              <h2 className="column-focus-title">مسار برنامج التحول</h2>
+              <p className="column-focus-subtitle">تحليلات ومؤشرات مبادرات برنامج التحول الوطني الصحي</p>
+            </div>
+
+            {/* Chart Block 4: برنامج التحول */}
+            <section className="glass-panel chart-block-section">
+              <div className="chart-header">
+                <h3 className="chart-title">دورة حياة برنامج التحول</h3>
+                <p className="chart-subtitle">توزيع المشاريع المرتبطة بمبادرات برنامج التحول</p>
+              </div>
+              <div className="chart-body">
+                {budgetSourcesStats ? (
+                  <SVGDonutChart 
+                    data={buildTransformationChartData()} 
+                    totalLabel="مشروع" 
+                    colors={lifecycleColors} 
+                  />
+                ) : (
+                  <p className="no-data">لا توجد بيانات متاحة للمخطط</p>
+                )}
+              </div>
+            </section>
+
+            {/* Chart Block 5: Classification (Transformation only) */}
+            <section className="glass-panel chart-block-section">
+              <div className="chart-header">
+                <h3 className="chart-title">التصنيف الفني للتحول</h3>
+                <p className="chart-subtitle">تصنيفات مشاريع برنامج التحول حسب التصنيف التشغيلي</p>
+              </div>
+              <div className="chart-body">
+                {transformationClassificationStats.length > 0 ? (
+                  <SVGDonutChart 
+                    data={transformationClassificationStats} 
+                    totalLabel="مشروع" 
+                    colors={classificationColors} 
+                  />
+                ) : (
+                  <p className="no-data">لا توجد تصنيفات فنية للتحول</p>
+                )}
+              </div>
+            </section>
+
+            {/* Chart Block 6: Progress status (RAG) (Transformation only) */}
+            <section className="glass-panel chart-block-section">
+              <div className="chart-header">
+                <h3 className="chart-title">مؤشر التقدم (RAG) للتحول</h3>
+                <p className="chart-subtitle">الحالة الفعلية وسرعة إنجاز العقود القائمة لبرنامج التحول</p>
+              </div>
+              <div className="chart-body">
+                {transformationRagStats.length > 0 ? (
+                  <SVGDonutChart 
+                    data={buildTransformationProgressStatusData()} 
+                    totalLabel="عقد نشط" 
+                    colors={progressStatusColors} 
+                  />
+                ) : (
+                  <p className="no-data">لا توجد عقود نشطة للتحول</p>
+                )}
+              </div>
+            </section>
+
+          </div>
+
+        </div>
+
+        {/* Bottom Feed Section - Professional alignment for feeds */}
+        <div className="bottom-feed-section">
+          
+          {/* Committee comments feed */}
+          <section className="glass-panel feed-panel-card">
+            <h3 className="panel-headline flex items-center gap-2">
+              <MessageIcon size={18} className="text-teal" />
+              <span>آخر التحديثات والتعليقات من أعضاء اللجنة</span>
+            </h3>
+            <div className="comments-scroll-area">
+              {latestComments.map((comment) => (
+                <div key={comment.id} className="comment-bubble">
+                  <div className="bubble-header">
+                    <div className="bubble-author">
+                      <div className="avatar-dot">{comment.commenter_name[0]}</div>
+                      <span className="author-name">{comment.commenter_name}</span>
+                    </div>
+                    <span className="bubble-date">{formatDate(comment.created_at)}</span>
+                  </div>
+                  <div className="bubble-body">
+                    <p className="comment-message">{comment.comment_text}</p>
+                    {comment.project_title && (
+                      <div className="bubble-link-tag">
+                        <LinkIcon size={10} className="text-secondary" />
+                        <span>{getStageLabel(comment.stage)}</span>
+                        <span className="divider">-</span>
+                        <span className="link-title" title={comment.project_title}>{comment.project_title}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {latestComments.length === 0 && (
+                <div className="empty-bubble text-center text-muted">لا توجد تعليقات مسجلة حالياً</div>
+              )}
+            </div>
+          </section>
+
+          {/* High priority assessed projects */}
+          <section className="glass-panel feed-panel-card">
+            <h3 className="panel-headline flex items-center gap-2">
+              <TrophyIcon size={18} style={{ color: "#d97706" }} />
+              <span>المشاريع الأعلى أولوية (تقييم اللجنة)</span>
+            </h3>
+            <div className="top-priority-scroll-area">
+              {topPriorityProjects.map((p, idx) => (
+                <div key={p.id} className="priority-item">
+                  <div className="rank-badge">#{idx + 1}</div>
+                  <div className="priority-item-info">
+                    <h4 className="priority-item-title" title={p.project_name}>{p.project_name}</h4>
+                    <span className="priority-item-id">معرّف التقييم: {p.id}</span>
+                  </div>
+                  <div className="priority-score-tag">
+                    <span className={`score-value ${getScoreColorClass(p.total_score)}`}>
+                      {Number(p.total_score).toFixed(2)}
+                    </span>
+                    <span className="score-label">درجة</span>
+                  </div>
+                </div>
+              ))}
+              {topPriorityProjects.length === 0 && (
+                <div className="empty-bubble text-center text-muted">لم يتم إنجاز أي تقييم أولويات للمشاريع بعد</div>
+              )}
+            </div>
+            
+            <Link href="/priority" className="btn btn-glass view-matrix-btn">
+              <CalculatorIcon size={14} />
+              <span>الذهاب إلى حاسبة ومصفوفة الأولويات كاملة</span>
+            </Link>
+          </section>
+
+        </div>
+
+      </div>
+
+      {/* Dynamic Project Line-List Details (Modal Popout Overlay Portalled to document.body) */}
+      {popoutOpen && mounted && typeof window !== "undefined" && createPortal(
+        <div className="modal-overlay">
+          <div className="popout-card">
+            
+            <div className="popout-header">
+              <div className="header-meta">
+                <h2 className="popout-headline">
+                  تفاصيل المشاريع: {getStageLabel(activeCard === "all" ? "priority_matrix" : activeCard)}
+                  <span className="count-badge" style={{ fontSize: '0.8rem', background: 'var(--slate-100)', padding: '2px 8px', borderRadius: '6px', color: 'var(--color-secondary)' }}>
+                    ({filteredStageProjects.length} مشروع)
+                  </span>
+                </h2>
+                <p className="popout-desc font-medium">كافة البنود والمشاريع التابعة للمجموعة المختارة</p>
+              </div>
+              
+              <div className="header-controls">
+                {/* Search bar inside popout */}
+                <div className="popout-search-box">
+                  <span className="popout-search-icon"><SearchIcon size={14} /></span>
+                  <input 
+                    type="text" 
+                    placeholder="ابحث بالاسم، القطاع أو الإدارة..." 
+                    className="form-input popout-search-input"
+                    value={listSearchTerm}
+                    onChange={(e) => setListSearchTerm(e.target.value)}
+                  />
+                </div>
+                {/* Close button */}
+                <button onClick={() => setPopoutOpen(false)} className="close-popout-btn" aria-label="إغلاق">&times;</button>
+              </div>
+            </div>
+
+            <div className="popout-body table-responsive">
+              {projectsLoading ? (
+                <div className="inner-loading-box">
+                  <div className="small-spinner"></div>
+                  <p>جاري تحميل قائمة المشاريع...</p>
+                </div>
+              ) : filteredStageProjects.length === 0 ? (
+                <div className="empty-panel text-center text-muted" style={{ padding: '40px' }}>لا توجد مشاريع مطابقة للبحث</div>
+              ) : (
+                <table className="stage-list-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '40px' }}>م</th>
+                      <th style={{ width: '400px' }}>اسم المشروع / العقد</th>
+                      <th>القطاع</th>
+                      <th>الإدارة المالكة</th>
+                      <th>الميزانية / التكلفة</th>
+                      <th>التصنيف</th>
+                      {activeCard === "all" ? <th>المرحلة الحالية</th> : <th>مصدر الميزانية</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStageProjects.map((proj, index) => {
+                      const costVal = proj.total_cost || proj.estimated_value || 0;
+                      const classificationVal = proj.classification || proj.project_classification || "غير محدد";
+                      const budgetSourceVal = proj.budget_source || proj.funding_source || "غير محدد";
+                      return (
+                        <tr key={proj.id || index}>
+                          <td className="col-id">{proj.id || index + 1}</td>
+                          <td className="col-name font-bold" title={proj.project_name}>{proj.project_name}</td>
+                          <td><span className="cell-tag tag-sector">{proj.sector || "غير محدد"}</span></td>
+                          <td className="text-secondary font-medium">{proj.owning_department || "غير محدد"}</td>
+                          <td className="font-bold">{costVal > 0 ? formatCurrency(costVal) : "قيد الدراسة"}</td>
+                          <td><span className="cell-tag tag-classification">{classificationVal}</span></td>
+                          {activeCard === "all" ? (
+                            <td><span className="cell-tag tag-stage">{proj.stage_name}</span></td>
+                          ) : (
+                            <td className="text-muted font-medium">{budgetSourceVal}</td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            
+            <div className="popout-footer">
+              <button onClick={() => setPopoutOpen(false)} className="btn btn-primary close-footer-btn">إغلاق القائمة التصفحية</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      <style jsx>{`
+        .dashboard-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+          box-sizing: border-box;
+          width: 100%;
+        }
+
+        /* KPI Panel */
+        .kpi-panel-section {
+          width: 100%;
+        }
+        .kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+        .kpi-card {
+          padding: 16px 20px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          background: #ffffff;
+          border: 1px solid rgba(11, 114, 133, 0.06);
+          cursor: pointer;
+          transition: all 0.25s ease;
+        }
+        .kpi-card:hover {
+          border-color: var(--color-secondary);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(11, 114, 133, 0.05);
+        }
+        .active-kpi {
+          border-color: var(--color-secondary) !important;
+          background: rgba(11, 114, 133, 0.02) !important;
+          box-shadow: 0 8px 25px rgba(11, 114, 133, 0.06) !important;
+        }
+        .kpi-icon-wrapper {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .cyan-bg { background: rgba(9, 201, 146, 0.08); }
+        .cyan-text { color: var(--color-primary); }
+        .teal-bg { background: rgba(11, 114, 133, 0.08); }
+        .teal-text { color: var(--color-secondary); }
+        .blue-bg { background: rgba(37, 99, 235, 0.08); }
+        .blue-text { color: #1d4ed8; }
+        .yellow-bg { background: rgba(180, 83, 9, 0.08); }
+        .yellow-text { color: #b45309; }
+        .purple-bg { background: rgba(168, 85, 247, 0.08); }
+        .purple-text { color: #a855f7; }
+
+        .kpi-content {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          flex: 1;
+          overflow: hidden;
+        }
+        .kpi-title {
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: var(--text-secondary);
+          margin: 0;
+        }
+        .kpi-value {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          line-height: 1.1;
+        }
+        .kpi-subtext {
+          font-size: 0.625rem;
+          color: var(--text-muted);
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 140px;
+        }
+
+        /* Two Columns Layout */
+        .two-columns-dashboard {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          width: 100%;
+        }
+
+        .dashboard-column {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .chart-block-section {
+          padding: 24px;
+          background: #ffffff;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .chart-header {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .chart-title {
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0;
+        }
+
+        .chart-subtitle {
+          font-size: 0.68rem;
+          color: var(--text-muted);
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .chart-body {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 170px;
+          width: 100%;
+        }
+
+        /* Feeds Panel Wrapper in Column 2 */
+        .panels-feed-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .feed-panel-card {
+          padding: 20px 24px;
+          background: #ffffff;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .panel-headline {
+          font-size: 0.9rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .comments-scroll-area {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          max-height: 250px;
+          overflow-y: auto;
+          padding-left: 6px;
+        }
+
+        .comment-bubble {
+          background: var(--slate-50);
+          border: 1px solid rgba(0,0,0,0.02);
+          border-radius: 12px;
+          padding: 12px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          transition: all 0.2s ease;
+        }
+
+        .comment-bubble:hover {
+          background: #ffffff;
+          border-color: rgba(11, 114, 133, 0.15);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+
+        .bubble-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .bubble-author {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .avatar-dot {
+          width: 26px;
+          height: 26px;
+          background: rgba(11, 114, 133, 0.08);
+          color: var(--color-secondary);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 0.75rem;
+        }
+
+        .author-name {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .bubble-date {
+          font-size: 0.65rem;
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+
+        .comment-message {
+          font-size: 0.76rem;
+          color: var(--text-secondary);
+          line-height: 1.5;
+          margin: 0;
+        }
+
+        .bubble-link-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(0,0,0,0.02);
+          border: 1px solid rgba(0,0,0,0.04);
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 0.68rem;
+          margin-top: 2px;
+          align-self: flex-start;
+        }
+
+        .bubble-link-tag span {
+          font-weight: 700;
+        }
+
+        .bubble-link-tag .divider {
+          color: var(--text-muted);
+        }
+
+        .bubble-link-tag .link-title {
+          color: var(--text-secondary);
+          max-width: 180px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .top-priority-scroll-area {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          max-height: 230px;
+          overflow-y: auto;
+        }
+
+        .priority-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: var(--slate-50);
+          border: 1px solid rgba(0,0,0,0.02);
+          border-radius: 10px;
+          padding: 10px 14px;
+          transition: all 0.2s ease;
+        }
+
+        .priority-item:hover {
+          background: #ffffff;
+          border-color: rgba(11, 114, 133, 0.15);
+          transform: translateX(-4px);
+        }
+
+        .rank-badge {
+          font-size: 1rem;
+          font-weight: 800;
+          color: var(--color-secondary);
+          width: 26px;
+        }
+
+        .priority-item-info {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .priority-item-title {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 220px;
+        }
+
+        .priority-item-id {
+          font-size: 0.625rem;
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+
+        .priority-score-tag {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          background: rgba(0,0,0,0.02);
+          border: 1px solid rgba(0,0,0,0.04);
+          padding: 4px 8px;
+          border-radius: 8px;
+          min-width: 42px;
+        }
+
+        .priority-score-tag .score-label {
+          font-size: 0.525rem;
+          color: var(--text-muted);
+          font-weight: 700;
+        }
+
+        .view-matrix-btn {
+          width: 100%;
+          justify-content: center;
+          font-size: 0.75rem;
+          padding: 10px;
+          margin-top: 6px;
+        }
+
+        .text-emerald { color: #10b981; }
+        .text-teal { color: #0f766e; }
+        .text-yellow { color: #b45309; }
+        .text-red { color: #ef4444; }
+
+        .no-data {
+          color: var(--text-muted);
+          font-size: 0.78rem;
+          font-weight: 600;
+        }
+
+        .empty-bubble {
+          padding: 20px;
+          font-size: 0.75rem;
+        }
+
+        .column-focus-header {
+          padding: 16px 20px;
+          border-radius: 14px;
+          margin-bottom: -8px;
+          border-right: 4px solid var(--color-secondary);
+        }
+        .heia-gradient {
+          background: linear-gradient(to left, rgba(12, 166, 120, 0.04) 0%, transparent 100%);
+          border-right-color: var(--color-primary);
+        }
+        .trans-gradient {
+          background: linear-gradient(to left, rgba(11, 114, 133, 0.04) 0%, transparent 100%);
+          border-right-color: var(--color-secondary);
+        }
+        .column-focus-title {
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0;
+        }
+        .column-focus-subtitle {
+          font-size: 0.68rem;
+          color: var(--text-muted);
+          font-weight: 600;
+          margin: 4px 0 0 0;
+        }
+        .bottom-feed-section {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          width: 100%;
+          margin-top: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+          .two-columns-dashboard {
+            grid-template-columns: 1fr;
+          }
+          .bottom-feed-section {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 768px) {
+          .kpi-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+    </DashboardLayout>
+  );
+}
