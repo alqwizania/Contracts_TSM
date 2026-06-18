@@ -221,6 +221,15 @@ export async function POST(request) {
       return Response.json({ error: "اسم المشروع مطلوب" }, { status: 400 });
     }
 
+    // Check for duplicate project name
+    const existingResult = await sql`
+      SELECT id FROM priority_matrix 
+      WHERE LOWER(project_name) = LOWER(${project_name.trim()})
+    `;
+    if (existingResult.length > 0) {
+      return Response.json({ error: "هذا المشروع مضاف بالفعل في مصفوفة الأولويات" }, { status: 409 });
+    }
+
     // Generate next ID
     const maxIdResult = await sql`SELECT MAX(id) as max_id FROM priority_matrix`;
     const nextId = (maxIdResult[0]?.max_id || 0) + 1;
@@ -239,11 +248,11 @@ export async function POST(request) {
       computedC6 = isDistribute ? 2 : 1;
     }
     
-    const c1Val = parseFloat(c1) || 0;
-    const c2Val = parseFloat(c2) || 0;
-    const c3Val = parseFloat(c3) || 0;
-    const c4Val = parseFloat(c4) || 0;
-    const c5Val = parseFloat(c5) || 0;
+    const c1Val = c1 !== undefined && c1 !== null ? parseFloat(c1) : 1;
+    const c2Val = c2 !== undefined && c2 !== null ? parseFloat(c2) : 1;
+    const c3Val = c3 !== undefined && c3 !== null ? parseFloat(c3) : 1;
+    const c4Val = c4 !== undefined && c4 !== null ? parseFloat(c4) : 1;
+    const c5Val = c5 !== undefined && c5 !== null ? parseFloat(c5) : 1;
     
     const phaseOneScore = (c1Val * 0.15) + (c2Val * 0.15) + (c3Val * 0.15) + (c4Val * 0.35) + (c5Val * 0.20);
     const computedFinalScore = (phaseOneScore * 0.8) + (computedC6 * 0.2);

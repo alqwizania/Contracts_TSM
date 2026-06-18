@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import AnimatedLogo from "./AnimatedLogo";
 import { 
   UsersIcon, 
   LogOutIcon, 
@@ -65,14 +66,7 @@ export default function Sidebar({ activeTab }) {
         </button>
         
         <div className="mobile-brand">
-          <Image 
-            src="/logo.png" 
-            alt="وقاية" 
-            width={70} 
-            height={35} 
-            className="mobile-logo-img"
-            priority
-          />
+          <AnimatedLogo size={32} />
           <span className="mobile-brand-title">محفظة المشاريع والعقود</span>
         </div>
 

@@ -3,8 +3,32 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "./components/DashboardLayout";
+import ProjectDetailsModal from "./components/ProjectDetailsModal";
+
+// Dynamically import DashboardCharts and DashboardDonuts to avoid SSR hydration mismatches
+const DashboardCharts = dynamic(() => import("./components/DashboardCharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex-center" style={{ minHeight: "150px", flexDirection: "column", gap: "12px", background: "#ffffff", borderRadius: "16px", border: "1px solid var(--slate-200)", padding: "20px" }}>
+      <div className="small-spinner"></div>
+      <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: "600", margin: 0 }}>جاري تحميل المخططات التفاعلية المتقدمة...</p>
+    </div>
+  )
+});
+
+const DashboardDonuts = dynamic(() => import("./components/DashboardDonuts"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex-center" style={{ minHeight: "250px", flexDirection: "column", gap: "12px", background: "#ffffff", borderRadius: "16px", border: "1px solid var(--slate-200)", padding: "20px" }}>
+      <div className="small-spinner"></div>
+      <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: "600", margin: 0 }}>جاري تحميل المؤشرات والتحليلات البيانية...</p>
+    </div>
+  )
+});
+
 import {
   FolderIcon,
   PencilIcon,
@@ -20,170 +44,6 @@ import {
   CalculatorIcon
 } from "./components/Icons";
 
-// Custom SVG Donut Chart Component
-const SVGDonutChart = ({ data, totalLabel = "مشروع", colors = [] }) => {
-  const total = data.reduce((acc, curr) => acc + curr.value, 0);
-  const size = 150;
-  const strokeWidth = 16;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-
-  let accumulatedPercentage = 0;
-
-  return (
-    <div className="donut-chart-container">
-      <div className="donut-wrapper">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          {/* Base background circle */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="transparent"
-            stroke="#f1f5f9"
-            strokeWidth={strokeWidth}
-          />
-          {/* Segments */}
-          {data.map((item, idx) => {
-            const percentage = total > 0 ? (item.value / total) * 100 : 0;
-            const strokeDashoffset = circumference - (percentage / 100) * circumference;
-            const strokeDasharray = circumference;
-            const rotation = (accumulatedPercentage / 100) * 360 - 90;
-            accumulatedPercentage += percentage;
-
-            const color = colors[idx % colors.length] || "#cbd5e1";
-
-            return (
-              <circle
-                key={idx}
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="transparent"
-                stroke={color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={strokeDasharray}
-                strokeDashoffset={strokeDashoffset}
-                transform={`rotate(${rotation} ${size / 2} ${size / 2})`}
-                strokeLinecap="round"
-                className="donut-segment"
-                style={{
-                  transition: "stroke-dashoffset 0.5s ease-in-out, stroke-width 0.2s",
-                  cursor: "pointer"
-                }}
-              >
-                <title>{`${item.name}: ${item.value} (${percentage.toFixed(1)}%)`}</title>
-              </circle>
-            );
-          })}
-        </svg>
-        {/* Center label */}
-        <div className="donut-center-label">
-          <span className="donut-center-val">{total}</span>
-          <span className="donut-center-lbl">{totalLabel}</span>
-        </div>
-      </div>
-
-      {/* Legend list */}
-      <div className="donut-legend">
-        {data.map((item, idx) => {
-          const color = colors[idx % colors.length] || "#cbd5e1";
-          const percentage = total > 0 ? (item.value / total) * 100 : 0;
-          return (
-            <div key={idx} className="legend-item">
-              <span className="legend-bullet" style={{ backgroundColor: color }}></span>
-              <span className="legend-name" title={item.name}>{item.name}</span>
-              <span className="legend-value">{item.value}</span>
-              <span className="legend-percentage">({percentage.toFixed(0)}%)</span>
-            </div>
-          );
-        })}
-      </div>
-      <style jsx>{`
-        .donut-chart-container {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 8px;
-          flex-wrap: wrap;
-          justify-content: center;
-          width: 100%;
-        }
-        .donut-wrapper {
-          position: relative;
-          width: 150px;
-          height: 150px;
-          flex-shrink: 0;
-        }
-        .donut-segment:hover {
-          stroke-width: 18px;
-        }
-        .donut-center-label {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          pointer-events: none;
-        }
-        .donut-center-val {
-          font-size: 1.4rem;
-          font-weight: 800;
-          color: var(--text-primary);
-          line-height: 1;
-        }
-        .donut-center-lbl {
-          font-size: 0.65rem;
-          color: var(--text-muted);
-          font-weight: 700;
-          margin-top: 2px;
-        }
-        .donut-legend {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          flex: 1;
-          min-width: 120px;
-        }
-        .legend-item {
-          display: flex;
-          align-items: center;
-          font-size: 0.7rem;
-          color: var(--text-secondary);
-          gap: 6px;
-          font-weight: 600;
-        }
-        .legend-bullet {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          flex-shrink: 0;
-        }
-        .legend-name {
-          flex: 1;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 120px;
-          text-align: right;
-        }
-        .legend-value {
-          font-weight: 700;
-          color: var(--text-primary);
-        }
-        .legend-percentage {
-          color: var(--text-muted);
-          font-size: 0.6rem;
-        }
-      `}</style>
-    </div>
-  );
-};
-
 export default function DashboardHome() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState(null);
@@ -198,6 +58,9 @@ export default function DashboardHome() {
   const [classificationStats, setClassificationStats] = useState([]);
   const [heiaClassificationStats, setHeiaClassificationStats] = useState([]);
   const [transformationClassificationStats, setTransformationClassificationStats] = useState([]);
+  const [sectorBudgetStats, setSectorBudgetStats] = useState([]);
+  const [sCurveStats, setSCurveStats] = useState([]);
+  const [classificationTreemapStats, setClassificationTreemapStats] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Tabular projects list details (Modal popout)
@@ -206,10 +69,50 @@ export default function DashboardHome() {
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [listSearchTerm, setListSearchTerm] = useState("");
   const [popoutOpen, setPopoutOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState(null);
+
+  // Project details modal states
+  const [detailsStage, setDetailsStage] = useState(null);
+  const [detailsId, setDetailsId] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const router = useRouter();
 
+  const triggerRefresh = () => {
+    loadStats();
+    if (activeCard) {
+      loadStageProjects(activeCard, activeFilters);
+    }
+  };
+
   // Load dashboard statistics
+  async function loadStats() {
+    try {
+      const res = await fetch("/api/portfolio?type=summary");
+      const data = await res.json();
+      if (data.success) {
+        setStats(data.summary);
+        setRagStats(data.activeRagStats || []);
+        setHeiaRagStats(data.heiaRagStats || []);
+        setTransformationRagStats(data.transformationRagStats || []);
+        setSectorStats(data.sectorStats || []);
+        setLatestComments(data.latestComments || []);
+        setTopPriorityProjects(data.topPriorityProjects || []);
+        setBudgetSourcesStats(data.budgetSourcesStats || null);
+        setClassificationStats(data.classificationStats || []);
+        setHeiaClassificationStats(data.heiaClassificationStats || []);
+        setTransformationClassificationStats(data.transformationClassificationStats || []);
+        setSectorBudgetStats(data.sectorBudgetStats || []);
+        setSCurveStats(data.sCurveStats || []);
+        setClassificationTreemapStats(data.classificationTreemapStats || []);
+      }
+    } catch (err) {
+      console.error("Error loading stats:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     setMounted(true);
     const storedUser = localStorage.getItem("pha_user");
@@ -217,37 +120,20 @@ export default function DashboardHome() {
       setUser(JSON.parse(storedUser));
     }
 
-    async function loadStats() {
-      try {
-        const res = await fetch("/api/portfolio?type=summary");
-        const data = await res.json();
-        if (data.success) {
-          setStats(data.summary);
-          setRagStats(data.activeRagStats || []);
-          setHeiaRagStats(data.heiaRagStats || []);
-          setTransformationRagStats(data.transformationRagStats || []);
-          setSectorStats(data.sectorStats || []);
-          setLatestComments(data.latestComments || []);
-          setTopPriorityProjects(data.topPriorityProjects || []);
-          setBudgetSourcesStats(data.budgetSourcesStats || null);
-          setClassificationStats(data.classificationStats || []);
-          setHeiaClassificationStats(data.heiaClassificationStats || []);
-          setTransformationClassificationStats(data.transformationClassificationStats || []);
-        }
-      } catch (err) {
-        console.error("Error loading stats:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadStats();
   }, []);
 
-  const loadStageProjects = async (stageKey) => {
+  const loadStageProjects = async (stageKey, extraFilters = null) => {
     setProjectsLoading(true);
+    setActiveFilters(extraFilters);
     try {
-      const res = await fetch(`/api/portfolio?stage=${stageKey}`);
+      let url = `/api/portfolio?stage=${stageKey}`;
+      if (extraFilters) {
+        Object.entries(extraFilters).forEach(([k, v]) => {
+          if (v) url += `&${k}=${encodeURIComponent(v)}`;
+        });
+      }
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setStageProjects(data.data || []);
@@ -263,7 +149,34 @@ export default function DashboardHome() {
     setActiveCard(stageKey);
     setPopoutOpen(true);
     setListSearchTerm("");
-    loadStageProjects(stageKey);
+    loadStageProjects(stageKey, null);
+  };
+
+  const handleSegmentClick = (budgetSource, filterType, value) => {
+    let targetStage = "all";
+    let extraFilters = { budget_source: budgetSource };
+
+    if (filterType === 'stage') {
+      const labelMap = {
+        "خطة الطلبات": "demand_plan",
+        "في الطرح": "tendering_procedures",
+        "الترسية": "awarding",
+        "التعاقد": "contracting",
+        "نشطة": "active_contracts",
+        "العقود النشطة": "active_contracts"
+      };
+      targetStage = labelMap[value] || "all";
+    } else if (filterType === 'classification') {
+      extraFilters.classification = value;
+    } else if (filterType === 'rag') {
+      targetStage = "active_contracts";
+      extraFilters.status = value;
+    }
+
+    setActiveCard(targetStage);
+    setPopoutOpen(true);
+    setListSearchTerm("");
+    loadStageProjects(targetStage, extraFilters);
   };
 
   const formatCurrency = (val) => {
@@ -411,13 +324,19 @@ export default function DashboardHome() {
               onClick={() => handleCardClick("all")}
               className={`kpi-card glass-panel glass-panel-hover ${activeCard === "all" && popoutOpen ? "active-kpi" : ""}`}
             >
-              <div className="kpi-icon-wrapper cyan-bg">
-                <FolderIcon size={20} className="cyan-text" />
+              <div className="kpi-top-row">
+                <div className="kpi-icon-wrapper cyan-bg">
+                  <FolderIcon size={20} className="cyan-text" />
+                </div>
+                <span className="kpi-badge">100%</span>
               </div>
-              <div className="kpi-content">
+              <div className="kpi-main-info">
                 <h3 className="kpi-title">إجمالي المشاريع</h3>
                 <div className="kpi-value">{stats?.total}</div>
                 <div className="kpi-subtext">كافة المشاريع في المحفظة</div>
+                <div className="kpi-progress-bar-container">
+                  <div className="kpi-progress-fill bg-cyan" style={{ width: "100%" }}></div>
+                </div>
               </div>
             </div>
 
@@ -426,13 +345,21 @@ export default function DashboardHome() {
               onClick={() => handleCardClick("active_contracts")}
               className={`kpi-card glass-panel glass-panel-hover ${activeCard === "active_contracts" && popoutOpen ? "active-kpi" : ""}`}
             >
-              <div className="kpi-icon-wrapper teal-bg">
-                <FlashIcon size={20} className="teal-text" />
+              <div className="kpi-top-row">
+                <div className="kpi-icon-wrapper teal-bg">
+                  <FlashIcon size={20} className="teal-text" />
+                </div>
+                <span className="kpi-badge">
+                  {stats?.total > 0 ? Math.round(((stats?.active?.count || 0) / stats?.total) * 100) : 0}%
+                </span>
               </div>
-              <div className="kpi-content">
+              <div className="kpi-main-info">
                 <h3 className="kpi-title">إجمالي المشاريع القائمة</h3>
                 <div className="kpi-value">{stats?.active?.count}</div>
                 <div className="kpi-subtext">الميزانية: {formatCurrency(stats?.active?.total_cost)}</div>
+                <div className="kpi-progress-bar-container">
+                  <div className="kpi-progress-fill bg-teal" style={{ width: `${stats?.total > 0 ? ((stats?.active?.count || 0) / stats?.total) * 100 : 0}%` }}></div>
+                </div>
               </div>
             </div>
 
@@ -441,13 +368,21 @@ export default function DashboardHome() {
               onClick={() => handleCardClick("contracting")}
               className={`kpi-card glass-panel glass-panel-hover ${activeCard === "contracting" && popoutOpen ? "active-kpi" : ""}`}
             >
-              <div className="kpi-icon-wrapper blue-bg">
-                <PencilIcon size={20} className="blue-text" />
+              <div className="kpi-top-row">
+                <div className="kpi-icon-wrapper blue-bg">
+                  <PencilIcon size={20} className="blue-text" />
+                </div>
+                <span className="kpi-badge">
+                  {stats?.total > 0 ? Math.round(((stats?.contracting?.count || 0) / stats?.total) * 100) : 0}%
+                </span>
               </div>
-              <div className="kpi-content">
+              <div className="kpi-main-info">
                 <h3 className="kpi-title">إجمالي العقود المعتمدة</h3>
                 <div className="kpi-value">{stats?.contracting?.count}</div>
                 <div className="kpi-subtext">الميزانية: {formatCurrency(stats?.contracting?.budget)}</div>
+                <div className="kpi-progress-bar-container">
+                  <div className="kpi-progress-fill bg-blue" style={{ width: `${stats?.total > 0 ? ((stats?.contracting?.count || 0) / stats?.total) * 100 : 0}%` }}></div>
+                </div>
               </div>
             </div>
 
@@ -456,13 +391,21 @@ export default function DashboardHome() {
               onClick={() => handleCardClick("awarding")}
               className={`kpi-card glass-panel glass-panel-hover ${activeCard === "awarding" && popoutOpen ? "active-kpi" : ""}`}
             >
-              <div className="kpi-icon-wrapper yellow-bg">
-                <TrophyIcon size={20} className="yellow-text" />
+              <div className="kpi-top-row">
+                <div className="kpi-icon-wrapper yellow-bg">
+                  <TrophyIcon size={20} className="yellow-text" />
+                </div>
+                <span className="kpi-badge">
+                  {stats?.total > 0 ? Math.round(((stats?.awarding?.count || 0) / stats?.total) * 100) : 0}%
+                </span>
               </div>
-              <div className="kpi-content">
+              <div className="kpi-main-info">
                 <h3 className="kpi-title">إجمالي المشاريع المرساة</h3>
                 <div className="kpi-value">{stats?.awarding?.count}</div>
                 <div className="kpi-subtext">قيد التوقيع والاعتماد</div>
+                <div className="kpi-progress-bar-container">
+                  <div className="kpi-progress-fill bg-yellow" style={{ width: `${stats?.total > 0 ? ((stats?.awarding?.count || 0) / stats?.total) * 100 : 0}%` }}></div>
+                </div>
               </div>
             </div>
 
@@ -471,157 +414,49 @@ export default function DashboardHome() {
               onClick={() => handleCardClick("tendering_procedures")}
               className={`kpi-card glass-panel glass-panel-hover ${activeCard === "tendering_procedures" && popoutOpen ? "active-kpi" : ""}`}
             >
-              <div className="kpi-icon-wrapper purple-bg">
-                <CalculatorIcon size={20} className="purple-text" />
+              <div className="kpi-top-row">
+                <div className="kpi-icon-wrapper purple-bg">
+                  <CalculatorIcon size={20} className="purple-text" />
+                </div>
+                <span className="kpi-badge">
+                  {stats?.total > 0 ? Math.round(((stats?.tendering?.count || 0) / stats?.total) * 100) : 0}%
+                </span>
               </div>
-              <div className="kpi-content">
+              <div className="kpi-main-info">
                 <h3 className="kpi-title">إجمالي المشاريع المطروحة</h3>
                 <div className="kpi-value">{stats?.tendering?.count}</div>
                 <div className="kpi-subtext">مراجعة كراسات وإعداد عروض</div>
+                <div className="kpi-progress-bar-container">
+                  <div className="kpi-progress-fill bg-purple" style={{ width: `${stats?.total > 0 ? ((stats?.tendering?.count || 0) / stats?.total) * 100 : 0}%` }}></div>
+                </div>
               </div>
             </div>
 
           </div>
         </section>
 
-        {/* Charts Layout - Two Columns Drill Down System */}
-        <div className="two-columns-dashboard">
-          
-          {/* Column 1: ميزانية الهيئة */}
-          <div className="dashboard-column">
-            
-            <div className="column-focus-header heia-gradient">
-              <h2 className="column-focus-title">مسار ميزانية الهيئة</h2>
-              <p className="column-focus-subtitle">تحليلات ومؤشرات المشاريع الممولة من ميزانية الهيئة العامة</p>
-            </div>
-
-            {/* Chart Block 1: ميزانية الهيئة */}
-            <section className="glass-panel chart-block-section">
-              <div className="chart-header">
-                <h3 className="chart-title">دورة حياة ميزانية الهيئة</h3>
-                <p className="chart-subtitle">توزيع المشاريع الممولة بالكامل من ميزانية الهيئة العامة</p>
-              </div>
-              <div className="chart-body">
-                {budgetSourcesStats ? (
-                  <SVGDonutChart 
-                    data={buildHeiaChartData()} 
-                    totalLabel="مشروع" 
-                    colors={lifecycleColors} 
-                  />
-                ) : (
-                  <p className="no-data">لا توجد بيانات متاحة للمخطط</p>
-                )}
-              </div>
-            </section>
-
-            {/* Chart Block 2: Classification (Heia only) */}
-            <section className="glass-panel chart-block-section">
-              <div className="chart-header">
-                <h3 className="chart-title">التصنيف الفني للهيئة</h3>
-                <p className="chart-subtitle">تصنيفات مشاريع الهيئة حسب نوع الاحتياج التشغيلي والتقني</p>
-              </div>
-              <div className="chart-body">
-                {heiaClassificationStats.length > 0 ? (
-                  <SVGDonutChart 
-                    data={heiaClassificationStats} 
-                    totalLabel="مشروع" 
-                    colors={classificationColors} 
-                  />
-                ) : (
-                  <p className="no-data">لا توجد تصنيفات فنية</p>
-                )}
-              </div>
-            </section>
-
-            {/* Chart Block 3: Progress status (RAG) (Heia only) */}
-            <section className="glass-panel chart-block-section">
-              <div className="chart-header">
-                <h3 className="chart-title">مؤشر التقدم (RAG) للهيئة</h3>
-                <p className="chart-subtitle">الحالة الفعلية وسرعة إنجاز العقود القائمة لميزانية الهيئة</p>
-              </div>
-              <div className="chart-body">
-                {heiaRagStats.length > 0 ? (
-                  <SVGDonutChart 
-                    data={buildProgressStatusData()} 
-                    totalLabel="عقد نشط" 
-                    colors={progressStatusColors} 
-                  />
-                ) : (
-                  <p className="no-data">لا توجد عقود نشطة للهيئة</p>
-                )}
-              </div>
-            </section>
-
+        {/* Interactive Advanced Visualizations Section */}
+        <section className="interactive-charts-section animate-fade-in" style={{ animationDelay: "0.05s" }}>
+          <div className="section-title-wrapper">
+            <h2 className="section-main-title">التحليلات والمؤشرات التفاعلية المتقدمة</h2>
+            <p className="section-sub-title">إحصاءات تفصيلية تفاعلية لمراقبة ميزانيات القطاعات، نسب الإنجاز التراكمي وتوزيع بنود المحفظة</p>
           </div>
+          <DashboardCharts 
+            sectorBudgetStats={sectorBudgetStats} 
+            sCurveStats={sCurveStats} 
+            classificationTreemapStats={classificationTreemapStats} 
+          />
+        </section>
 
-          {/* Column 2: برنامج التحول */}
-          <div className="dashboard-column">
-            
-            <div className="column-focus-header trans-gradient">
-              <h2 className="column-focus-title">مسار برنامج التحول</h2>
-              <p className="column-focus-subtitle">تحليلات ومؤشرات مبادرات برنامج التحول الوطني الصحي</p>
-            </div>
-
-            {/* Chart Block 4: برنامج التحول */}
-            <section className="glass-panel chart-block-section">
-              <div className="chart-header">
-                <h3 className="chart-title">دورة حياة برنامج التحول</h3>
-                <p className="chart-subtitle">توزيع المشاريع المرتبطة بمبادرات برنامج التحول</p>
-              </div>
-              <div className="chart-body">
-                {budgetSourcesStats ? (
-                  <SVGDonutChart 
-                    data={buildTransformationChartData()} 
-                    totalLabel="مشروع" 
-                    colors={lifecycleColors} 
-                  />
-                ) : (
-                  <p className="no-data">لا توجد بيانات متاحة للمخطط</p>
-                )}
-              </div>
-            </section>
-
-            {/* Chart Block 5: Classification (Transformation only) */}
-            <section className="glass-panel chart-block-section">
-              <div className="chart-header">
-                <h3 className="chart-title">التصنيف الفني للتحول</h3>
-                <p className="chart-subtitle">تصنيفات مشاريع برنامج التحول حسب التصنيف التشغيلي</p>
-              </div>
-              <div className="chart-body">
-                {transformationClassificationStats.length > 0 ? (
-                  <SVGDonutChart 
-                    data={transformationClassificationStats} 
-                    totalLabel="مشروع" 
-                    colors={classificationColors} 
-                  />
-                ) : (
-                  <p className="no-data">لا توجد تصنيفات فنية للتحول</p>
-                )}
-              </div>
-            </section>
-
-            {/* Chart Block 6: Progress status (RAG) (Transformation only) */}
-            <section className="glass-panel chart-block-section">
-              <div className="chart-header">
-                <h3 className="chart-title">مؤشر التقدم (RAG) للتحول</h3>
-                <p className="chart-subtitle">الحالة الفعلية وسرعة إنجاز العقود القائمة لبرنامج التحول</p>
-              </div>
-              <div className="chart-body">
-                {transformationRagStats.length > 0 ? (
-                  <SVGDonutChart 
-                    data={buildTransformationProgressStatusData()} 
-                    totalLabel="عقد نشط" 
-                    colors={progressStatusColors} 
-                  />
-                ) : (
-                  <p className="no-data">لا توجد عقود نشطة للتحول</p>
-                )}
-              </div>
-            </section>
-
-          </div>
-
-        </div>
+        <DashboardDonuts
+          heiaLifecycleData={buildHeiaChartData()}
+          heiaClassificationData={heiaClassificationStats}
+          heiaRagData={buildProgressStatusData()}
+          transLifecycleData={buildTransformationChartData()}
+          transClassificationData={transformationClassificationStats}
+          transRagData={buildTransformationProgressStatusData()}
+          onSegmentClick={handleSegmentClick}
+        />
 
         {/* Bottom Feed Section - Professional alignment for feeds */}
         <div className="bottom-feed-section">
@@ -705,8 +540,15 @@ export default function DashboardHome() {
             
             <div className="popout-header">
               <div className="header-meta">
-                <h2 className="popout-headline">
-                  تفاصيل المشاريع: {getStageLabel(activeCard === "all" ? "priority_matrix" : activeCard)}
+                <h2 className="popout-headline" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <span>تفاصيل المشاريع: {getStageLabel(activeCard === "all" ? "priority_matrix" : activeCard)}</span>
+                  {activeFilters && (
+                    <span className="filter-badge" style={{ fontSize: '0.7rem', background: 'rgba(9, 201, 146, 0.1)', padding: '4px 10px', borderRadius: '20px', color: 'var(--color-primary)', fontWeight: 'bold' }}>
+                      {activeFilters.budget_source}
+                      {activeFilters.classification && ` - تصنيف: ${activeFilters.classification}`}
+                      {activeFilters.status && ` - حالة: ${activeFilters.status}`}
+                    </span>
+                  )}
                   <span className="count-badge" style={{ fontSize: '0.8rem', background: 'var(--slate-100)', padding: '2px 8px', borderRadius: '6px', color: 'var(--color-secondary)' }}>
                     ({filteredStageProjects.length} مشروع)
                   </span>
@@ -757,8 +599,31 @@ export default function DashboardHome() {
                       const costVal = proj.total_cost || proj.estimated_value || 0;
                       const classificationVal = proj.classification || proj.project_classification || "غير محدد";
                       const budgetSourceVal = proj.budget_source || proj.funding_source || "غير محدد";
+                      
+                      const getStageKeyFromLabel = (label) => {
+                        const map = {
+                          "خطة الطلبات": "demand_plan",
+                          "في الطرح": "tendering_procedures",
+                          "الترسية": "awarding",
+                          "التعاقد": "contracting",
+                          "عقد نشط": "active_contracts"
+                        };
+                        return map[label] || "active_contracts";
+                      };
+
+                      const computedStage = activeCard === "all" ? getStageKeyFromLabel(proj.stage_name) : activeCard;
+
                       return (
-                        <tr key={proj.id || index}>
+                        <tr 
+                          key={proj.id || index}
+                          onClick={() => {
+                            setDetailsStage(computedStage);
+                            setDetailsId(proj.id);
+                            setIsDetailsOpen(true);
+                          }}
+                          className="clickable-popout-row"
+                          style={{ cursor: "pointer" }}
+                        >
                           <td className="col-id">{proj.id || index + 1}</td>
                           <td className="col-name font-bold" title={proj.project_name}>{proj.project_name}</td>
                           <td><span className="cell-tag tag-sector">{proj.sector || "غير محدد"}</span></td>
@@ -787,6 +652,32 @@ export default function DashboardHome() {
       )}
 
       <style jsx>{`
+        .interactive-charts-section {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          width: 100%;
+        }
+        .section-title-wrapper {
+          border-right: 4px solid var(--color-primary);
+          padding-right: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          margin-bottom: 4px;
+        }
+        .section-main-title {
+          font-size: 1.05rem;
+          font-weight: 850;
+          color: var(--text-primary);
+          margin: 0;
+        }
+        .section-sub-title {
+          font-size: 0.72rem;
+          color: var(--text-muted);
+          font-weight: 600;
+          margin: 0;
+        }
         .dashboard-container {
           max-width: 1400px;
           margin: 0 auto;
@@ -804,28 +695,50 @@ export default function DashboardHome() {
         }
         .kpi-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 20px;
         }
         .kpi-card {
-          padding: 16px 20px;
+          padding: 20px;
           display: flex;
-          align-items: center;
-          gap: 14px;
-          background: #ffffff;
-          border: 1px solid rgba(11, 114, 133, 0.06);
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+          background: rgba(255, 255, 255, 0.7);
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           cursor: pointer;
-          transition: all 0.25s ease;
+          transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+          border-radius: 16px;
+          box-shadow: 0 4px 18px rgba(11, 114, 133, 0.02);
+          width: 100%;
+          box-sizing: border-box;
         }
         .kpi-card:hover {
-          border-color: var(--color-secondary);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(11, 114, 133, 0.05);
+          transform: translateY(-4px);
+          border-color: rgba(11, 114, 133, 0.25);
+          box-shadow: 0 12px 30px rgba(11, 114, 133, 0.08);
+          background: #ffffff;
         }
         .active-kpi {
           border-color: var(--color-secondary) !important;
           background: rgba(11, 114, 133, 0.02) !important;
           box-shadow: 0 8px 25px rgba(11, 114, 133, 0.06) !important;
+        }
+        .kpi-top-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+        }
+        .kpi-badge {
+          font-size: 0.65rem;
+          font-weight: 800;
+          padding: 2px 6px;
+          border-radius: 6px;
+          background: rgba(11, 114, 133, 0.05);
+          color: var(--color-secondary);
         }
         .kpi-icon-wrapper {
           width: 40px;
@@ -847,22 +760,22 @@ export default function DashboardHome() {
         .purple-bg { background: rgba(168, 85, 247, 0.08); }
         .purple-text { color: #a855f7; }
 
-        .kpi-content {
+        .kpi-main-info {
           display: flex;
           flex-direction: column;
-          gap: 2px;
-          flex: 1;
-          overflow: hidden;
+          gap: 4px;
+          width: 100%;
+          text-align: right;
         }
         .kpi-title {
-          font-size: 0.7rem;
+          font-size: 0.72rem;
           font-weight: 700;
           color: var(--text-secondary);
           margin: 0;
         }
         .kpi-value {
           font-size: 1.5rem;
-          font-weight: 800;
+          font-weight: 850;
           color: var(--text-primary);
           line-height: 1.1;
         }
@@ -873,8 +786,25 @@ export default function DashboardHome() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 140px;
         }
+        .kpi-progress-bar-container {
+          width: 100%;
+          height: 5px;
+          background: var(--slate-100);
+          border-radius: 10px;
+          overflow: hidden;
+          margin-top: 6px;
+        }
+        .kpi-progress-fill {
+          height: 100%;
+          border-radius: 10px;
+          transition: width 0.5s ease-out;
+        }
+        .bg-cyan { background-color: var(--color-primary); }
+        .bg-teal { background-color: var(--color-secondary); }
+        .bg-blue { background-color: #3b82f6; }
+        .bg-yellow { background-color: #f59e0b; }
+        .bg-purple { background-color: #a855f7; }
 
         /* Two Columns Layout */
         .two-columns-dashboard {
@@ -1179,6 +1109,14 @@ export default function DashboardHome() {
           width: 100%;
           margin-top: 8px;
         }
+        
+        .clickable-popout-row {
+          transition: background-color 0.2s;
+        }
+
+        .clickable-popout-row:hover td {
+          background: rgba(11, 114, 133, 0.03) !important;
+        }
 
         /* Responsive */
         @media (max-width: 1024px) {
@@ -1195,6 +1133,16 @@ export default function DashboardHome() {
           }
         }
       `}</style>
+      
+      {/* Project Details Modal */}
+      <ProjectDetailsModal
+        isOpen={isDetailsOpen}
+        stage={detailsStage}
+        id={detailsId}
+        onClose={() => setIsDetailsOpen(false)}
+        onUpdate={triggerRefresh}
+      />
+      
     </DashboardLayout>
   );
 }

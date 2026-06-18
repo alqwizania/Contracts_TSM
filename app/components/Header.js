@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
+import AnimatedLogo from "./AnimatedLogo";
 
 export default function Header({ activeTab }) {
   const [user, setUser] = useState(null);
@@ -31,15 +32,7 @@ export default function Header({ activeTab }) {
   return (
     <header className="glass-panel navbar animate-fade-in">
       <div className="nav-right">
-        <Image 
-          src="/logo.png" 
-          alt="شعار هيئة الصحة العامة" 
-          width={130} 
-          height={65} 
-          className="nav-logo"
-          style={{ background: '#ffffff', padding: '6px', borderRadius: '10px' }}
-          priority
-        />
+        <AnimatedLogo size={42} />
         <div className="nav-title-block">
           <h1>محفظة المشاريع والعقود 2026</h1>
           <p>هيئة الصحة العامة - وقاية</p>

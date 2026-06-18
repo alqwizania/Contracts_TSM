@@ -146,11 +146,7 @@ export default function DashboardLayout({ children, activeTab }) {
         .footer-logo-img {
           height: 36px;
           object-fit: contain;
-          background: #ffffff;
-          padding: 4px 8px;
-          border-radius: 6px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-          border: 1px solid rgba(0,0,0,0.02);
+          background: transparent;
         }
 
         .dashboard-layout-container {

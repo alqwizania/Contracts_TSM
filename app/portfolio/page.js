@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "../components/DashboardLayout";
+import AddProjectModal from "../components/AddProjectModal";
+import ProjectDetailsModal from "../components/ProjectDetailsModal";
 import {
   FolderIcon,
   FileTextIcon,
@@ -139,6 +141,15 @@ export default function PortfolioPage() {
   const [user, setUser] = useState(null);
   const router = useRouter();
 
+  // Modals state
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [detailsStage, setDetailsStage] = useState(null);
+  const [detailsId, setDetailsId] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const triggerRefresh = () => setRefreshTrigger(prev => prev + 1);
+
   // Load auth state
   useEffect(() => {
     const storedUser = localStorage.getItem("pha_user");
@@ -147,7 +158,7 @@ export default function PortfolioPage() {
     }
   }, []);
 
-  // Fetch list when activeTab or search changes
+  // Fetch list when activeTab, search, or refreshTrigger changes
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -165,7 +176,7 @@ export default function PortfolioPage() {
     }
 
     fetchData();
-  }, [activeTab, search]);
+  }, [activeTab, search, refreshTrigger]);
 
   const formatCurrency = (val) => {
     if (val === null || val === undefined) return "-";
@@ -241,10 +252,22 @@ export default function PortfolioPage() {
         <main className="glass-panel content-area animate-fade-in" style={{ animationDelay: '0.1s' }}>
           {/* Header & Search */}
           <div className="content-header">
-            <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              {getStageIcon(activeTab)}
-              <span>{STAGES.find(s => s.id === activeTab)?.label}</span>
-            </h2>
+            <div className="header-title-row">
+              <h2 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0 }}>
+                {getStageIcon(activeTab)}
+                <span>{STAGES.find(s => s.id === activeTab)?.label}</span>
+              </h2>
+              {user && ["active_contracts", "demand_plan", "tendering_procedures", "awarding", "contracting"].includes(activeTab) && (
+                <button 
+                  onClick={() => setIsAddOpen(true)}
+                  className="btn btn-primary add-project-btn flex items-center gap-1"
+                  style={{ marginRight: '16px', fontSize: '0.75rem', padding: '6px 12px', borderRadius: '8px' }}
+                >
+                  <PlusIcon size={14} />
+                  <span>إضافة مشروع جديد</span>
+                </button>
+              )}
+            </div>
             <div className="search-bar-wrapper">
               <span className="search-icon" style={{ display: "flex", alignItems: "center" }}><SearchIcon size={18} /></span>
               <input
@@ -280,23 +303,44 @@ export default function PortfolioPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dataList.map((row, idx) => (
-                    <tr key={row.id || idx}>
-                      {COLUMNS_MAP[activeTab]?.map((col) => (
-                        <td key={col.key}>{renderCell(row, col)}</td>
-                      ))}
-                      <td>
-                        {/* Only detail links for project/contract sheets, timeline sheets don't have separate detail pages */}
-                        {["active_contracts", "demand_plan", "tendering_procedures", "awarding", "contracting", "priority_contracts"].includes(activeTab) ? (
-                          <Link href={`/project/${activeTab}/${row.id}`} className="btn btn-glass btn-detail">
-                            📄 تفاصيل
-                          </Link>
-                        ) : (
-                          <span className="text-muted">-</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {dataList.map((row, idx) => {
+                    const isClickable = ["active_contracts", "demand_plan", "tendering_procedures", "awarding", "contracting", "priority_contracts"].includes(activeTab);
+                    return (
+                      <tr 
+                        key={row.id || idx}
+                        onClick={() => {
+                          if (isClickable) {
+                            setDetailsStage(activeTab);
+                            setDetailsId(row.id);
+                            setIsDetailsOpen(true);
+                          }
+                        }}
+                        style={{ cursor: isClickable ? "pointer" : "default" }}
+                        className="project-table-row"
+                      >
+                        {COLUMNS_MAP[activeTab]?.map((col) => (
+                          <td key={col.key}>{renderCell(row, col)}</td>
+                        ))}
+                        <td onClick={(e) => e.stopPropagation()}>
+                          {/* Only detail links for project/contract sheets, timeline sheets don't have separate detail pages */}
+                          {isClickable ? (
+                            <button 
+                              onClick={() => {
+                                setDetailsStage(activeTab);
+                                setDetailsId(row.id);
+                                setIsDetailsOpen(true);
+                              }}
+                              className="btn btn-glass btn-detail"
+                            >
+                              📄 تفاصيل
+                            </button>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -552,18 +596,45 @@ export default function PortfolioPage() {
           to { transform: rotate(360deg); }
         }
 
-        .empty-state {
-          padding: 60px 0;
-          flex-direction: column;
-          gap: 12px;
-          color: var(--text-secondary);
-        }
-
         .empty-state span {
           font-size: 2.5rem;
           opacity: 0.5;
         }
+
+        .header-title-row {
+          display: flex;
+          align-items: center;
+        }
+
+        .project-table-row {
+          transition: background-color 0.2s;
+        }
+
+        .project-table-row:hover td {
+          background: rgba(11, 114, 133, 0.02) !important;
+        }
       `}</style>
+      
+      {/* Modals */}
+      <AddProjectModal 
+        isOpen={isAddOpen} 
+        onClose={() => setIsAddOpen(false)} 
+        onSuccess={(newId, newStage) => {
+          triggerRefresh();
+          setDetailsStage(newStage);
+          setDetailsId(newId);
+          setIsDetailsOpen(true);
+        }}
+      />
+
+      <ProjectDetailsModal
+        isOpen={isDetailsOpen}
+        stage={detailsStage}
+        id={detailsId}
+        onClose={() => setIsDetailsOpen(false)}
+        onUpdate={triggerRefresh}
+      />
+
       </div>
     </DashboardLayout>
   );
