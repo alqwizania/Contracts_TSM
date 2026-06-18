@@ -339,9 +339,37 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
         {/* Modal Content Split */}
         <div className="detail-modal-body-wrapper">
           {loading ? (
-            <div className="modal-loading-state flex-center">
-              <div className="spinner"></div>
-              <p>جاري تحميل التفاصيل والملاحظات...</p>
+            <div className="detail-split-layout animate-fade-in" style={{ padding: '24px', boxSizing: 'border-box' }}>
+              {/* Right Panel Skeleton */}
+              <div className="details-attributes-panel" style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '24px', borderLeft: '1px solid var(--slate-100, #f1f5f9)' }}>
+                <div className="skeleton-line title" style={{ width: '50%' }}></div>
+                <div className="fields-grid-modal" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className="skeleton-line" style={{ width: '40%', height: '10px' }}></div>
+                      <div className="skeleton-line" style={{ width: '85%', height: '14px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Left Panel Skeleton */}
+              <div className="details-discussion-panel" style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div className="skeleton-line title" style={{ width: '40%' }}></div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: '#f8fafc', padding: '16px', borderRadius: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div className="skeleton-circle" style={{ width: '24px', height: '24px' }}></div>
+                          <div className="skeleton-line" style={{ width: '80px', height: '12px' }}></div>
+                        </div>
+                        <div className="skeleton-line" style={{ width: '40px', height: '10px' }}></div>
+                      </div>
+                      <div className="skeleton-line" style={{ width: '90%', height: '12px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : error ? (
             <div className="modal-error-state flex-center">

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "../components/DashboardLayout";
-import { X } from "lucide-react";
+import { X, HelpCircle } from "lucide-react";
 import {
   CalculatorIcon,
   SearchIcon,
@@ -515,7 +515,13 @@ export default function PriorityPage() {
                   {/* C1: Regulatory compliance */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C1: مستوى الإلزام النظامي (الوزن: 15%)</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C1: مستوى الإلزام النظامي (الوزن: 15%)</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">مدى استناد المشروع إلى أوامر سامية، قرارات مجلس الوزراء، أو أنظمة ولوائح نافذة لضمان الالتزام النظامي.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC1} 
                         onChange={(e) => setFormC1(Number(e.target.value))} 
@@ -538,7 +544,13 @@ export default function PriorityPage() {
                   {/* C2: Strategic alignment */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C2: درجة الارتباط بالاستراتيجية (الوزن: 15%)</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C2: درجة الارتباط بالاستراتيجية (الوزن: 15%)</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">مدى مواءمة مخرجات وأهداف هذا المشروع مع مبادرات وأهداف الخطة الاستراتيجية لهيئة الصحة العامة.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC2} 
                         onChange={(e) => setFormC2(Number(e.target.value))} 
@@ -561,7 +573,13 @@ export default function PriorityPage() {
                   {/* C3: 921 decision alignment */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C3: الارتباط قرار 921 (الوزن: 15%)</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C3: الارتباط قرار 921 (الوزن: 15%)</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">مدى مواءمة المشروع مع قرار مجلس الوزراء رقم 921 لتحديد اختصاصات الهيئة ومكافحة الأوبئة والأمراض السارية.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC3} 
                         onChange={(e) => setFormC3(Number(e.target.value))} 
@@ -584,7 +602,13 @@ export default function PriorityPage() {
                   {/* C4: Business continuity */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C4: أثر المشروع على استمرارية الأعمال والمخاطر التشغيلية (الوزن: 35%)</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C4: أثر المشروع على استمرارية الأعمال والمخاطر التشغيلية (الوزن: 35%)</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">تقييم الأثر المترتب على عدم تنفيذ المشروع (مثال: تعطل الأنظمة الحيوية أو تعثر العمليات اليومية للهيئة).</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC4} 
                         onChange={(e) => setFormC4(Number(e.target.value))} 
@@ -607,7 +631,13 @@ export default function PriorityPage() {
                   {/* C5: Readiness */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C5: مستوى جاهزية المشروع (الوزن: 20%)</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C5: مستوى جاهزية المشروع (الوزن: 20%)</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">مدى اكتمال وثائق الطرح وكراسة الشروط والمواصفات الفنية وجاهزية الإدارات المالكة للبدء الفوري.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC5} 
                         onChange={(e) => setFormC5(Number(e.target.value))} 
@@ -630,7 +660,13 @@ export default function PriorityPage() {
                   {/* C6: Feasibility - rated directly from the frontend */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label className="text-teal font-bold">قابلية التمويل C6 (المرحلة الثانية - الوزن: 20%)</label>
+                      <label className="text-teal font-bold" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>قابلية التمويل C6 (المرحلة الثانية - الوزن: 20%)</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">تقييم فرصة الحصول على تمويل للمشروع بناءً على الكفاءة ومصادر الصرف المعتمدة.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC6} 
                         onChange={(e) => setFormC6(Number(e.target.value))} 
@@ -742,7 +778,13 @@ export default function PriorityPage() {
                   {/* C1 Criteria */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C1: مستوى الإلزام النظامي</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C1: مستوى الإلزام النظامي</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">مدى استناد المشروع إلى أوامر سامية، قرارات مجلس الوزراء، أو أنظمة ولوائح نافذة لضمان الالتزام النظامي.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC1} 
                         onChange={(e) => setFormC1(Number(e.target.value))} 
@@ -765,7 +807,13 @@ export default function PriorityPage() {
                   {/* C2 Criteria */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C2: درجة الارتباط بالاستراتيجية</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C2: درجة الارتباط بالاستراتيجية</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">مدى مواءمة مخرجات وأهداف هذا المشروع مع مبادرات وأهداف الخطة الاستراتيجية لهيئة الصحة العامة.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC2} 
                         onChange={(e) => setFormC2(Number(e.target.value))} 
@@ -788,7 +836,13 @@ export default function PriorityPage() {
                   {/* C3 Criteria */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C3: الارتباط قرار 921</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C3: الارتباط قرار 921</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">مدى مواءمة المشروع مع قرار مجلس الوزراء رقم 921 لتحديد اختصاصات الهيئة ومكافحة الأوبئة والأمراض السارية.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC3} 
                         onChange={(e) => setFormC3(Number(e.target.value))} 
@@ -811,7 +865,13 @@ export default function PriorityPage() {
                   {/* C4 Criteria */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C4: أثر المشروع على استمرارية الأعمال</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C4: أثر المشروع على استمرارية الأعمال</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">تقييم الأثر المترتب على عدم تنفيذ المشروع (مثال: تعطل الأنظمة الحيوية أو تعثر العمليات اليومية للهيئة).</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC4} 
                         onChange={(e) => setFormC4(Number(e.target.value))} 
@@ -834,7 +894,13 @@ export default function PriorityPage() {
                   {/* C5 Criteria */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label>C5: مستوى جاهزية المشروع</label>
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>C5: مستوى جاهزية المشروع</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">مدى اكتمال وثائق الطرح وكراسة الشروط والمواصفات الفنية وجاهزية الإدارات المالكة للبدء الفوري.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC5} 
                         onChange={(e) => setFormC5(Number(e.target.value))} 
@@ -857,7 +923,13 @@ export default function PriorityPage() {
                   {/* C6 Criteria */}
                   <div className="form-group full-width crit-block">
                     <div className="crit-header">
-                      <label className="text-teal font-bold">قابلية التمويل C6 (المرحلة الثانية)</label>
+                      <label className="text-teal font-bold" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>قابلية التمويل C6 (المرحلة الثانية)</span>
+                        <span className="tooltip-container">
+                          <HelpCircle size={13} style={{ cursor: 'help' }} />
+                          <span className="tooltip-text">تقييم فرصة الحصول على تمويل للمشروع بناءً على الكفاءة ومصادر الصرف المعتمدة.</span>
+                        </span>
+                      </label>
                       <select 
                         value={formC6} 
                         onChange={(e) => setFormC6(Number(e.target.value))} 

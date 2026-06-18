@@ -285,27 +285,73 @@ export default function DashboardHome() {
 
   if (loading) {
     return (
-      <div className="loading-screen flex-center">
-        <div className="spinner"></div>
-        <p>جاري تحميل لوحة التحكم للمحفظة...</p>
+      <div className="loading-skeleton-dashboard animate-fade-in">
+        <div className="skeleton-header">
+          <div className="skeleton-line title"></div>
+          <div className="skeleton-line subtitle"></div>
+        </div>
+        
+        <div className="skeleton-kpi-grid">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="skeleton-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                <div className="skeleton-circle"></div>
+                <div className="skeleton-line" style={{ width: '40px', height: '14px' }}></div>
+              </div>
+              <div className="skeleton-line" style={{ width: '80%', height: '16px' }}></div>
+              <div className="skeleton-line" style={{ width: '50%', height: '12px' }}></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="skeleton-charts-block">
+          <div className="skeleton-card" style={{ height: '320px' }}>
+            <div className="skeleton-line title"></div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="skeleton-circle" style={{ width: '140px', height: '14px' }}></div>
+            </div>
+          </div>
+          <div className="skeleton-card" style={{ height: '320px' }}>
+            <div className="skeleton-line title"></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '32px' }}>
+              <div className="skeleton-line" style={{ width: '90%' }}></div>
+              <div className="skeleton-line" style={{ width: '75%' }}></div>
+              <div className="skeleton-line" style={{ width: '85%' }}></div>
+            </div>
+          </div>
+        </div>
+
         <style jsx>{`
-          .loading-screen {
-            min-height: 100vh;
+          .loading-skeleton-dashboard {
+            padding: 30px;
+            display: flex;
             flex-direction: column;
-            gap: 16px;
-            background: #ffffff;
+            gap: 30px;
+            min-height: 100vh;
+            background: #f8fafc;
+            direction: rtl;
             font-family: var(--font-cairo), sans-serif;
+            box-sizing: border-box;
           }
-          .spinner {
-            width: 45px;
-            height: 45px;
-            border: 4px solid rgba(13, 152, 159, 0.1);
-            border-radius: 50%;
-            border-top-color: var(--color-secondary);
-            animation: spin 1s linear infinite;
+          .skeleton-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
           }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
+          .skeleton-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+          }
+          .skeleton-charts-block {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 20px;
+          }
+          @media (max-width: 1024px) {
+            .skeleton-charts-block {
+              grid-template-columns: 1fr;
+            }
           }
         `}</style>
       </div>
@@ -576,9 +622,17 @@ export default function DashboardHome() {
 
             <div className="popout-body table-responsive">
               {projectsLoading ? (
-                <div className="inner-loading-box">
-                  <div className="small-spinner"></div>
-                  <p>جاري تحميل قائمة المشاريع...</p>
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                      <div className="skeleton-line" style={{ width: '30px', height: '14px' }}></div>
+                      <div className="skeleton-line" style={{ flex: 1, height: '14px' }}></div>
+                      <div className="skeleton-line" style={{ width: '100px', height: '14px' }}></div>
+                      <div className="skeleton-line" style={{ width: '140px', height: '14px' }}></div>
+                      <div className="skeleton-line" style={{ width: '90px', height: '14px' }}></div>
+                      <div className="skeleton-line" style={{ width: '70px', height: '14px' }}></div>
+                    </div>
+                  ))}
                 </div>
               ) : filteredStageProjects.length === 0 ? (
                 <div className="empty-panel text-center text-muted" style={{ padding: '40px' }}>لا توجد مشاريع مطابقة للبحث</div>

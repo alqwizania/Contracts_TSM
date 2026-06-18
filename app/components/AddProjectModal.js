@@ -47,9 +47,30 @@ export default function AddProjectModal({ isOpen, onClose, onSuccess }) {
     setMounted(true);
   }, []);
 
+  // Load draft on open
   useEffect(() => {
-    if (!isOpen) {
-      // Reset form states
+    if (isOpen) {
+      const savedDraft = localStorage.getItem("pha_project_draft");
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          if (draft.stage) setStage(draft.stage);
+          if (draft.projectName) setProjectName(draft.projectName);
+          if (draft.sectorType) setSectorType(draft.sectorType);
+          if (draft.customSector) setCustomSector(draft.customSector);
+          if (draft.department) setDepartment(draft.department);
+          if (draft.owner) setOwner(draft.owner);
+          if (draft.manager) setManager(draft.manager);
+          if (draft.budget) setBudget(draft.budget);
+          if (draft.classification) setClassification(draft.classification);
+          if (draft.budgetSource) setBudgetSource(draft.budgetSource);
+          if (draft.notes) setNotes(draft.notes);
+        } catch (e) {
+          console.error("Error loading project draft", e);
+        }
+      }
+    } else {
+      // Reset form states when closed
       setStage("demand_plan");
       setProjectName("");
       setSectorType("الصحة العامة");
@@ -64,6 +85,26 @@ export default function AddProjectModal({ isOpen, onClose, onSuccess }) {
       setError("");
     }
   }, [isOpen]);
+
+  // Auto-save draft on values change (only when open)
+  useEffect(() => {
+    if (isOpen && mounted) {
+      const draft = {
+        stage,
+        projectName,
+        sectorType,
+        customSector,
+        department,
+        owner,
+        manager,
+        budget,
+        classification,
+        budgetSource,
+        notes
+      };
+      localStorage.setItem("pha_project_draft", JSON.stringify(draft));
+    }
+  }, [isOpen, stage, projectName, sectorType, customSector, department, owner, manager, budget, classification, budgetSource, notes, mounted]);
 
   if (!isOpen || !mounted) return null;
 
@@ -114,6 +155,7 @@ export default function AddProjectModal({ isOpen, onClose, onSuccess }) {
         throw new Error(data.error || "فشل إضافة المشروع");
       }
 
+      localStorage.removeItem("pha_project_draft");
       onSuccess(data.id, stage);
       onClose();
     } catch (err) {
