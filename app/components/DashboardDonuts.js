@@ -37,6 +37,7 @@ const CustomDonutTooltip = ({ active, payload }) => {
         <p className="tooltip-value">
           العدد: <strong>{data.value}</strong>
         </p>
+        <div className="tooltip-hint">💡 اضغط للاستعراض التفصيلي</div>
         <style jsx>{`
           .custom-donut-tooltip {
             background: #ffffff;
@@ -58,6 +59,15 @@ const CustomDonutTooltip = ({ active, payload }) => {
             color: var(--text-secondary);
             margin: 0;
           }
+          .tooltip-hint {
+            font-size: 0.6rem;
+            color: var(--color-primary);
+            margin-top: 6px;
+            font-weight: 700;
+            border-top: 1px dashed var(--slate-200);
+            padding-top: 4px;
+            text-align: center;
+          }
         `}</style>
       </div>
     );
@@ -77,6 +87,10 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
   const onPieLeave = () => {
     setActiveIndex(-1);
   };
+
+  const isFocused = activeIndex !== -1;
+  const displayValue = isFocused ? data[activeIndex].value : total;
+  const displayLabel = isFocused ? data[activeIndex].name : totalLabel;
 
   return (
     <section className="glass-panel donut-card-block animate-fade-in">
@@ -101,6 +115,7 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
                 onMouseEnter={() => setActiveIndex(idx)}
                 onMouseLeave={() => setActiveIndex(-1)}
                 onClick={() => onClick && onClick(item.name)}
+                style={isHovered ? { backgroundColor: `${color}14`, color: color } : {}}
               >
                 <span className="legend-indicator" style={{ backgroundColor: color }}></span>
                 <span className="legend-text-label" title={item.name}>{item.name}</span>
@@ -129,6 +144,8 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
                   dataKey="value"
                   onMouseEnter={onPieEnter}
                   onMouseLeave={onPieLeave}
+                  stroke="#ffffff"
+                  strokeWidth={1.5}
                 >
                   {data.map((entry, index) => (
                     <Cell 
@@ -146,8 +163,8 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
             
             {/* Centered Total Counter */}
             <div className="donut-center-metric">
-              <span className="center-value-text">{total}</span>
-              <span className="center-label-text">{totalLabel}</span>
+              <span className="center-value-text">{displayValue}</span>
+              <span className="center-label-text" title={displayLabel}>{displayLabel}</span>
             </div>
           </div>
         </div>
@@ -222,6 +239,11 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
           color: var(--text-muted);
           font-weight: 700;
           margin-top: 2px;
+          max-width: 80px;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .donut-legend-side {
           display: flex;
