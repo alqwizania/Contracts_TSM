@@ -550,23 +550,7 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
           border: 1px solid rgba(59, 130, 246, 0.2);
         }
 
-        .close-btn {
-          border: none;
-          background: transparent;
-          color: var(--text-secondary);
-          cursor: pointer;
-          padding: 4px;
-          border-radius: 6px;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
 
-        .close-btn:hover {
-          background: var(--slate-100, #f1f5f9);
-          color: var(--text-primary);
-        }
 
         .detail-modal-body-wrapper {
           flex: 1;

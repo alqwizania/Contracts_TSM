@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "./components/DashboardLayout";
 import ProjectDetailsModal from "./components/ProjectDetailsModal";
+import { X } from "lucide-react";
 
 // Dynamically import DashboardCharts and DashboardDonuts to avoid SSR hydration mismatches
 const DashboardCharts = dynamic(() => import("./components/DashboardCharts"), {
@@ -569,7 +570,7 @@ export default function DashboardHome() {
                   />
                 </div>
                 {/* Close button */}
-                <button onClick={() => setPopoutOpen(false)} className="close-popout-btn" aria-label="إغلاق">&times;</button>
+                <button onClick={() => setPopoutOpen(false)} className="close-popout-btn" aria-label="إغلاق"><X size={18} /></button>
               </div>
             </div>
 

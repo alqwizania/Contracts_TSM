@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "../components/DashboardLayout";
+import { X } from "lucide-react";
 import {
   CalculatorIcon,
   SearchIcon,
@@ -465,7 +466,7 @@ export default function PriorityPage() {
                   <CalculatorIcon size={20} className="text-teal" />
                   <span>تقييم أولوية المشروع: {selectedProject.project_name}</span>
                 </h2>
-                <button onClick={() => setIsEditModalOpen(false)} className="close-btn">&times;</button>
+                <button onClick={() => setIsEditModalOpen(false)} className="close-btn" aria-label="إغلاق"><X size={18} /></button>
               </div>
               
               <form onSubmit={handleSaveAssessment} className="modal-body">
@@ -667,7 +668,7 @@ export default function PriorityPage() {
                   <PlusIcon size={20} className="text-teal" />
                   <span>إضافة وتقييم مشروع جديد للمحفظة</span>
                 </h2>
-                <button onClick={() => setIsAddModalOpen(false)} className="close-btn">&times;</button>
+                <button onClick={() => setIsAddModalOpen(false)} className="close-btn" aria-label="إغلاق"><X size={18} /></button>
               </div>
               
               <form onSubmit={handleAddNewProject} className="modal-body">
