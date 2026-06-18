@@ -101,36 +101,11 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
 
       <div className="donut-layout">
         
-        {/* Left/Right: Customized Side Legend */}
-        <div className="donut-legend-side">
-          {data.map((item, idx) => {
-            const color = colors[idx % colors.length];
-            const percentage = total > 0 ? (item.value / total) * 100 : 0;
-            const isHovered = activeIndex === idx;
-
-            return (
-              <div 
-                key={idx} 
-                className={`legend-row ${isHovered ? "legend-row-active" : ""}`}
-                onMouseEnter={() => setActiveIndex(idx)}
-                onMouseLeave={() => setActiveIndex(-1)}
-                onClick={() => onClick && onClick(item.name)}
-                style={isHovered ? { backgroundColor: `${color}14`, color: color } : {}}
-              >
-                <span className="legend-indicator" style={{ backgroundColor: color }}></span>
-                <span className="legend-text-label" title={item.name}>{item.name}</span>
-                <span className="legend-number-val">{item.value}</span>
-                <span className="legend-percentage-val">({percentage.toFixed(0)}%)</span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Center/Left: Interactive Donut SVG Container */}
+        {/* Top: Interactive Donut SVG Container (Larger Size) */}
         <div className="donut-visual-container">
           <div className="donut-svg-wrapper">
             {total > 0 ? (
-              <PieChart width={150} height={150}>
+              <PieChart width={200} height={200}>
                 <Tooltip content={<CustomDonutTooltip />} />
                 <Pie
                   activeIndex={activeIndex}
@@ -138,8 +113,8 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
                   data={data}
                   cx="50%"
                   cy="50%"
-                  innerRadius={45}
-                  outerRadius={62}
+                  innerRadius={62}
+                  outerRadius={82}
                   paddingAngle={3}
                   dataKey="value"
                   onMouseEnter={onPieEnter}
@@ -169,6 +144,31 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
           </div>
         </div>
 
+        {/* Bottom: Customized Pill Legend */}
+        <div className="donut-legend-bottom">
+          {data.map((item, idx) => {
+            const color = colors[idx % colors.length];
+            const percentage = total > 0 ? (item.value / total) * 100 : 0;
+            const isHovered = activeIndex === idx;
+
+            return (
+              <div 
+                key={idx} 
+                className={`legend-pill ${isHovered ? "legend-pill-active" : ""}`}
+                onMouseEnter={() => setActiveIndex(idx)}
+                onMouseLeave={() => setActiveIndex(-1)}
+                onClick={() => onClick && onClick(item.name)}
+                style={isHovered ? { backgroundColor: `${color}14`, color: color, borderColor: `${color}30` } : {}}
+              >
+                <span className="legend-indicator" style={{ backgroundColor: color }}></span>
+                <span className="legend-text-label" title={item.name}>{item.name}</span>
+                <span className="legend-number-val">{item.value}</span>
+                <span className="legend-percentage-val">({percentage.toFixed(0)}%)</span>
+              </div>
+            );
+          })}
+        </div>
+
       </div>
 
       <style jsx>{`
@@ -177,7 +177,7 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
           background: #ffffff;
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 20px;
           border-radius: 16px;
         }
         .card-header-block {
@@ -200,20 +200,23 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
         }
         .donut-layout {
           display: flex;
+          flex-direction: column;
           align-items: center;
           gap: 16px;
-          height: 150px;
           width: 100%;
         }
         .donut-visual-container {
-          width: 150px;
-          height: 150px;
+          width: 200px;
+          height: 200px;
           position: relative;
           flex-shrink: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
         .donut-svg-wrapper {
-          width: 100%;
-          height: 100%;
+          width: 200px;
+          height: 200px;
           position: relative;
         }
         .donut-center-metric {
@@ -229,58 +232,59 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
           pointer-events: none;
         }
         .center-value-text {
-          font-size: 1.45rem;
+          font-size: 1.85rem;
           font-weight: 850;
           color: var(--text-primary);
           line-height: 1;
         }
         .center-label-text {
-          font-size: 0.65rem;
+          font-size: 0.72rem;
           color: var(--text-muted);
           font-weight: 700;
-          margin-top: 2px;
-          max-width: 80px;
+          margin-top: 4px;
+          max-width: 120px;
           text-align: center;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .donut-legend-side {
+        .donut-legend-bottom {
           display: flex;
-          flex-direction: column;
-          gap: 5px;
-          flex: 1;
-          overflow: hidden;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
           direction: rtl;
+          margin-top: 8px;
         }
-        .legend-row {
+        .legend-pill {
           display: flex;
           align-items: center;
-          font-size: 0.72rem;
+          font-size: 0.7rem;
           color: var(--text-secondary);
           gap: 6px;
           font-weight: 600;
-          padding: 4px 6px;
-          border-radius: 6px;
+          padding: 5px 10px;
+          border-radius: 20px;
+          border: 1px solid var(--slate-100);
+          background: rgba(241, 245, 249, 0.4);
           transition: all 0.2s ease;
           cursor: pointer;
         }
-        .legend-row:hover,
-        .legend-row-active {
+        .legend-pill:hover,
+        .legend-pill-active {
           background: var(--slate-100);
           color: var(--text-primary);
+          border-color: var(--slate-200);
         }
         .legend-indicator {
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           flex-shrink: 0;
         }
         .legend-text-label {
-          flex: 1;
           white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
           text-align: right;
         }
         .legend-number-val {
