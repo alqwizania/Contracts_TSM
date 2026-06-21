@@ -37,7 +37,6 @@ const CustomDonutTooltip = ({ active, payload }) => {
         <p className="tooltip-value">
           العدد: <strong>{data.value}</strong>
         </p>
-        <div className="tooltip-hint">💡 اضغط للاستعراض التفصيلي</div>
         <style jsx>{`
           .custom-donut-tooltip {
             background: #ffffff;
@@ -58,15 +57,6 @@ const CustomDonutTooltip = ({ active, payload }) => {
           .tooltip-value {
             color: var(--text-secondary);
             margin: 0;
-          }
-          .tooltip-hint {
-            font-size: 0.6rem;
-            color: var(--color-primary);
-            margin-top: 6px;
-            font-weight: 700;
-            border-top: 1px dashed var(--slate-200);
-            padding-top: 4px;
-            text-align: center;
           }
         `}</style>
       </div>
@@ -106,7 +96,7 @@ const DonutCard = ({ title, subtitle, data, colors, totalLabel, onClick }) => {
           <div className="donut-svg-wrapper">
             {total > 0 ? (
               <PieChart width={200} height={200}>
-                <Tooltip content={<CustomDonutTooltip />} />
+                <Tooltip content={<CustomDonutTooltip />} offset={40} />
                 <Pie
                   activeIndex={activeIndex}
                   activeShape={renderActiveShape}

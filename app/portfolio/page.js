@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Star as StarIcon } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import AddProjectModal from "../components/AddProjectModal";
 import ProjectDetailsModal from "../components/ProjectDetailsModal";
@@ -45,21 +46,22 @@ const getStageIcon = (stageId) => {
 };
 
 const STAGES = [
-  { id: "active_contracts", label: "قائمة العقود النشطة", icon: "🟢" },
-  { id: "demand_plan", label: "خطة الطلبات 2026", icon: "📋" },
-  { id: "tendering_procedures", label: "في إجراءات الطرح", icon: "⚖️" },
-  { id: "priority_contracts", label: "العقود ذات الأولوية", icon: "⭐" },
-  { id: "awarding", label: "الترسية", icon: "🏆" },
-  { id: "contracting", label: "التعاقد", icon: "✍️" },
-  { id: "portfolio_plan", label: "خطة المحفظة 2026", icon: "📅" },
-  { id: "portfolio_details", label: "خطة المحفظة - التفصيل", icon: "🔍" },
-  { id: "annual_cycle", label: "الدورة السنوية", icon: "🔄" }
+  { id: "active_contracts", label: "قائمة العقود النشطة" },
+  { id: "demand_plan", label: "خطة الطلبات 2026" },
+  { id: "tendering_procedures", label: "في إجراءات الطرح" },
+  { id: "priority_contracts", label: "العقود ذات الأولوية" },
+  { id: "awarding", label: "الترسية" },
+  { id: "contracting", label: "التعاقد" },
+  { id: "portfolio_plan", label: "خطة المحفظة 2026" },
+  { id: "portfolio_details", label: "خطة المحفظة - التفصيل" },
+  { id: "annual_cycle", label: "الدورة السنوية" }
 ];
 
 const COLUMNS_MAP = {
   active_contracts: [
     { key: "id", label: "م" },
     { key: "project_name", label: "المشروع" },
+    { key: "is_priority", label: "الأولوية" },
     { key: "sector", label: "القطاع" },
     { key: "executing_entity", label: "الجهة المنفذة" },
     { key: "total_cost", label: "إجمالي التكلفة", type: "currency" },
@@ -69,6 +71,7 @@ const COLUMNS_MAP = {
   demand_plan: [
     { key: "id", label: "م" },
     { key: "project_name", label: "المشروع/الكراسة" },
+    { key: "is_priority", label: "الأولوية" },
     { key: "sector", label: "القطاع" },
     { key: "owning_department", label: "الإدارة المالكة" },
     { key: "estimated_value", label: "القيمة التقديرية", type: "currency" },
@@ -78,6 +81,7 @@ const COLUMNS_MAP = {
   tendering_procedures: [
     { key: "id", label: "م" },
     { key: "project_name", label: "المنافسة/الكراسة" },
+    { key: "is_priority", label: "الأولوية" },
     { key: "owning_department", label: "الإدارة المالكة" },
     { key: "competition_number", label: "رقم المنافسة" },
     { key: "tendering_stage", label: "مرحلة الطرح" },
@@ -87,6 +91,7 @@ const COLUMNS_MAP = {
   priority_contracts: [
     { key: "id", label: "م" },
     { key: "project_name", label: "المشروع" },
+    { key: "is_priority", label: "الأولوية" },
     { key: "status", label: "الحالة" },
     { key: "budget_item", label: "البند" },
     { key: "weekly_update", label: "التحديث الأسبوعي" }
@@ -94,6 +99,7 @@ const COLUMNS_MAP = {
   awarding: [
     { key: "id", label: "م" },
     { key: "project_name", label: "اسم المشروع" },
+    { key: "is_priority", label: "الأولوية" },
     { key: "owning_department", label: "الإدارة المالكة" },
     { key: "competition_number", label: "رقم المنافسة" },
     { key: "awarding_stage", label: "مرحلة المنافسة" },
@@ -102,6 +108,7 @@ const COLUMNS_MAP = {
   contracting: [
     { key: "id", label: "م" },
     { key: "project_name", label: "اسم المشروع" },
+    { key: "is_priority", label: "الأولوية" },
     { key: "executing_entity", label: "الجهة المنفذة" },
     { key: "total_cost", label: "إجمالي التكاليف", type: "currency" },
     { key: "contract_status", label: "وضع العقد" },
@@ -188,8 +195,28 @@ export default function PortfolioPage() {
   };
 
   const renderCell = (row, col) => {
+    if (col.key === "is_priority") {
+      if (row.is_priority) {
+        return (
+          <span className="priority-star-badge" title="عقد ذو أولوية">
+            <StarIcon size={11} fill="#d97706" style={{ color: "#d97706" }} />
+            <span>ذو أولوية</span>
+          </span>
+        );
+      }
+      return <span className="text-muted">-</span>;
+    }
+
     const value = row[col.key];
     if (value === null || value === undefined) return <span className="text-muted">-</span>;
+
+    if (col.key === "project_name") {
+      return (
+        <span className="project-name-container">
+          <span className="project-name-text">{value}</span>
+        </span>
+      );
+    }
 
     if (col.type === "currency") {
       return formatCurrency(value);
@@ -260,8 +287,7 @@ export default function PortfolioPage() {
               {user && ["active_contracts", "demand_plan", "tendering_procedures", "awarding", "contracting"].includes(activeTab) && (
                 <button 
                   onClick={() => setIsAddOpen(true)}
-                  className="btn btn-primary add-project-btn flex items-center gap-1"
-                  style={{ marginRight: '16px', fontSize: '0.75rem', padding: '6px 12px', borderRadius: '8px' }}
+                  className="btn btn-primary btn-add-project"
                 >
                   <PlusIcon size={14} />
                   <span>إضافة مشروع جديد</span>
@@ -289,7 +315,7 @@ export default function PortfolioPage() {
               </div>
             ) : dataList.length === 0 ? (
               <div className="empty-state flex-center">
-                <span>📂</span>
+                <FolderIcon size={36} className="text-muted" style={{ opacity: 0.5, marginBottom: '12px' }} />
                 <p>لا توجد بيانات مطابقة للبحث أو معروضة في هذا القسم.</p>
               </div>
             ) : (
@@ -330,9 +356,10 @@ export default function PortfolioPage() {
                                 setDetailsId(row.id);
                                 setIsDetailsOpen(true);
                               }}
-                              className="btn btn-glass btn-detail"
+                              className="btn btn-detail-action"
                             >
-                              📄 تفاصيل
+                              <FileTextIcon size={13} />
+                              <span>التفاصيل</span>
                             </button>
                           ) : (
                             <span className="text-muted">-</span>
@@ -356,6 +383,65 @@ export default function PortfolioPage() {
           display: flex;
           flex-direction: column;
           gap: 24px;
+        }
+
+        .project-name-container {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .project-name-text {
+          font-weight: 700;
+          color: var(--text-primary);
+        }
+
+        .priority-star-badge {
+          background: rgba(217, 119, 6, 0.08);
+          color: #d97706;
+          border: 1px solid rgba(217, 119, 6, 0.2);
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-size: 0.7rem;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          box-shadow: 0 1px 2px rgba(217, 119, 6, 0.05);
+        }
+
+        .btn-add-project {
+          margin-right: 16px;
+          font-size: 0.75rem;
+          padding: 8px 14px;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .btn-detail-action {
+          background: rgba(11, 114, 133, 0.05);
+          border: 1px solid rgba(11, 114, 133, 0.12);
+          color: var(--color-secondary) !important;
+          padding: 6px 14px;
+          font-size: 0.75rem;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-weight: 700;
+          transition: all 0.2s ease;
+          background-color: rgba(11, 114, 133, 0.05);
+        }
+
+        .btn-detail-action:hover {
+          background: var(--color-secondary);
+          border-color: var(--color-secondary);
+          color: #ffffff !important;
+          box-shadow: 0 4px 12px rgba(11, 114, 133, 0.15);
+          transform: translateY(-1px);
         }
 
         .navbar {

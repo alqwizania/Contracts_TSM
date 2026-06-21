@@ -13,8 +13,11 @@ import {
   Calculator, 
   CheckCircle2,
   Calendar,
-  DollarSign
+  DollarSign,
+  Star,
+  Eye
 } from "lucide-react";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 const LABELS_MAP = {
   id: "م الرقمي",
@@ -105,6 +108,7 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
   // Comment form state
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [showPriority, setShowPriority] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -119,6 +123,7 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
     if (isOpen && stage && id) {
       loadProjectDetails();
       checkPriorityMatrixStatus();
+      setShowPriority(false);
     } else {
       setProject(null);
       setComments([]);
@@ -126,6 +131,7 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
       setCalculatorStatus("idle");
       setCalculatorError("");
       setCommentText("");
+      setShowPriority(false);
     }
   }, [isOpen, stage, id]);
 
@@ -293,12 +299,18 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
                 {stage && (
                   <span className="badge badge-stage">{stage === 'demand_plan' ? 'خطة الطلبات' : stage === 'active_contracts' ? 'عقد نشط' : stage}</span>
                 )}
+                {showPriority && project.is_priority && (
+                  <span className="badge badge-priority flex items-center gap-1">
+                    <Star size={11} fill="#d97706" style={{ color: "#d97706" }} />
+                    <span>ذو أولوية</span>
+                  </span>
+                )}
               </div>
             )}
           </div>
           
           <div className="header-actions">
-            {project && user && (
+            {showPriority && project && user && (
               <>
                 {calculatorStatus === "exists" && (
                   <span className="badge-calculator-exists flex items-center gap-1">
@@ -338,7 +350,7 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
 
         {/* Modal Content Split */}
         <div className="detail-modal-body-wrapper">
-          {loading ? (
+          {loading || !project ? (
             <div className="detail-split-layout animate-fade-in" style={{ padding: '24px', boxSizing: 'border-box' }}>
               {/* Right Panel Skeleton */}
               <div className="details-attributes-panel" style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '24px', borderLeft: '1px solid var(--slate-100, #f1f5f9)' }}>
@@ -382,8 +394,28 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
               {/* Right Panel: Project Attributes Grid */}
               <div className="details-attributes-panel">
                 <h3 className="panel-sub-title">معلومات وتصانيف المشروع</h3>
-                <div className="fields-grid-modal">
-                  {Object.entries(project).map(([key, value]) => {
+                
+                {!showPriority && (
+                  <div className="reveal-priority-banner">
+                    <div className="reveal-icon-container">
+                      <Eye size={18} style={{ color: "var(--color-secondary)" }} />
+                    </div>
+                    <div className="reveal-content">
+                      <h4>تفاصيل الأولوية مخفية حالياً</h4>
+                      <p>انقر على الزر لتفعيل تقييم المشروع وعرض بيانات الأولوية الخاصة به.</p>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPriority(true)}
+                      className="btn-reveal-priority"
+                    >
+                      كشف تفاصيل وتقييم الأولوية
+                    </button>
+                  </div>
+                )}
+
+                 <div className="fields-grid-modal">
+                  {project && Object.entries(project).map(([key, value]) => {
                     if (
                       key === "id" || 
                       key === "project_name" || 
@@ -392,6 +424,10 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
                       value === undefined || 
                       value === ""
                     ) return null;
+
+                    if (!showPriority && (key === "priority" || key === "priority_calculator_result" || key === "is_priority")) {
+                      return null;
+                    }
                     
                     const label = LABELS_MAP[key];
                     if (!label) return null;
@@ -404,6 +440,29 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
                     );
                   })}
                 </div>
+
+                {showPriority && project && project.c1 !== undefined && project.c1 !== null && (
+                  <div className="radar-chart-card">
+                    <h4 className="radar-chart-title">تحليل معايير مصفوفة الأولوية</h4>
+                    <div style={{ width: '100%', height: '220px', marginTop: '12px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={[
+                          { subject: 'الإلزام C1', A: project.c1 || 1, fullMark: 5 },
+                          { subject: 'الاستراتيجية C2', A: project.c2 || 1, fullMark: 5 },
+                          { subject: 'قرار 921 C3', A: project.c3 || 1, fullMark: 5 },
+                          { subject: 'الاستمرارية C4', A: project.c4 || 1, fullMark: 5 },
+                          { subject: 'الجاهزية C5', A: project.c5 || 1, fullMark: 5 },
+                          { subject: 'التمويل C6', A: project.c6 || 5, fullMark: 5 }
+                        ]}>
+                          <PolarGrid stroke="#e2e8f0" />
+                          <PolarAngleAxis dataKey="subject" tick={{ fill: "#475569", fontSize: 9, fontWeight: 700, fontFamily: "Cairo" }} />
+                          <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: "#94a3b8", fontSize: 8 }} />
+                          <Radar name="التقييم" dataKey="A" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.2} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Left Panel: Comments Timeline Sidebar */}
@@ -473,6 +532,94 @@ export default function ProjectDetailsModal({ isOpen, stage, id, onClose, onUpda
       </div>
 
       <style jsx>{`
+        .badge-priority {
+          background: rgba(217, 119, 6, 0.08);
+          color: #d97706;
+          border: 1px solid rgba(217, 119, 6, 0.2);
+        }
+
+        .radar-chart-card {
+          margin-top: 24px;
+          padding: 16px;
+          background: #ffffff;
+          border: 1px solid var(--slate-150, #e2e8f0);
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        }
+
+        .radar-chart-title {
+          font-size: 0.85rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0 0 8px 0;
+          text-align: right;
+          border-right: 3px solid var(--color-secondary);
+          padding-right: 8px;
+        }
+
+        .reveal-priority-banner {
+          background: rgba(11, 114, 133, 0.03);
+          border: 1px dashed rgba(11, 114, 133, 0.2);
+          border-radius: 12px;
+          padding: 14px 18px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 20px;
+          direction: rtl;
+          text-align: right;
+          box-sizing: border-box;
+        }
+
+        .reveal-icon-container {
+          background: rgba(11, 114, 133, 0.08);
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .reveal-content {
+          flex: 1;
+        }
+
+        .reveal-content h4 {
+          font-size: 0.85rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0 0 4px 0;
+        }
+
+        .reveal-content p {
+          font-size: 0.72rem;
+          color: var(--text-secondary);
+          margin: 0;
+          line-height: 1.4;
+        }
+
+        .btn-reveal-priority {
+          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+          color: #ffffff !important;
+          font-family: var(--font-cairo), sans-serif;
+          font-size: 0.75rem;
+          padding: 8px 14px;
+          border-radius: 8px;
+          font-weight: 700;
+          white-space: nowrap;
+          border: none;
+          box-shadow: 0 2px 6px rgba(12, 166, 120, 0.15);
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+
+        .btn-reveal-priority:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(12, 166, 120, 0.22);
+        }
+
         .detail-modal-overlay {
           position: fixed;
           inset: 0;

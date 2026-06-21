@@ -406,26 +406,26 @@ tbody tr:hover {
 
 .close-btn,
 .close-popout-btn {
-  border: none;
-  background: var(--slate-50, #f8fafc);
-  color: var(--slate-500, #64748b);
+  border: 1px solid var(--slate-200, #e2e8f0);
+  background: var(--slate-100, #f1f5f9);
+  color: var(--slate-600, #475569);
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  border: 1px solid var(--slate-100, #f1f5f9);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
   box-sizing: border-box;
 }
 
 .close-btn:hover,
 .close-popout-btn:hover {
-  background: var(--slate-100, #f1f5f9);
-  color: var(--slate-800, #1e293b);
+  background: var(--slate-200, #e2e8f0);
+  color: var(--slate-900, #0f172a);
+  border-color: var(--slate-300, #cbd5e1);
   transform: rotate(90deg);
 }
 
@@ -527,14 +527,6 @@ tbody tr:hover {
   font-size: 1.15rem;
   font-weight: 800;
   margin: 0;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--text-muted);
 }
 
 .modal-body {

@@ -62,6 +62,7 @@ export default function DashboardHome() {
   const [sectorBudgetStats, setSectorBudgetStats] = useState([]);
   const [sCurveStats, setSCurveStats] = useState([]);
   const [classificationTreemapStats, setClassificationTreemapStats] = useState([]);
+  const [scatterStats, setScatterStats] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Tabular projects list details (Modal popout)
@@ -106,6 +107,7 @@ export default function DashboardHome() {
         setSectorBudgetStats(data.sectorBudgetStats || []);
         setSCurveStats(data.sCurveStats || []);
         setClassificationTreemapStats(data.classificationTreemapStats || []);
+        setScatterStats(data.scatterStats || []);
       }
     } catch (err) {
       console.error("Error loading stats:", err);
@@ -492,6 +494,7 @@ export default function DashboardHome() {
             sectorBudgetStats={sectorBudgetStats} 
             sCurveStats={sCurveStats} 
             classificationTreemapStats={classificationTreemapStats} 
+            scatterStats={scatterStats}
           />
         </section>
 

@@ -13,6 +13,8 @@ import {
   FolderIcon,
   ChevronRightIcon
 } from "../../../components/Icons";
+import { Star, Eye } from "lucide-react";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 const LABELS_MAP = {
   // Common fields
@@ -102,6 +104,7 @@ export default function ProjectDetailPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
+  const [showPriority, setShowPriority] = useState(false);
   
   // Comment Form State
   const [commentText, setCommentText] = useState("");
@@ -117,6 +120,7 @@ export default function ProjectDetailPage({ params }) {
 
     async function loadProjectDetails() {
       try {
+        setShowPriority(false);
         const res = await fetch(`/api/portfolio/${stage}/${id}`);
         const data = await res.json();
         
@@ -261,14 +265,43 @@ export default function ProjectDetailPage({ params }) {
               {project.progress_status && (
                 <span className="badge badge-green">{project.progress_status}</span>
               )}
+              {showPriority && project.is_priority && (
+                <span className="badge badge-priority flex items-center gap-1">
+                  <Star size={11} fill="#d97706" style={{ color: "#d97706" }} />
+                  <span>ذو أولوية</span>
+                </span>
+              )}
             </div>
           </div>
+
+          {!showPriority && (
+            <div className="reveal-priority-banner">
+              <div className="reveal-icon-container">
+                <Eye size={18} style={{ color: "var(--color-secondary)" }} />
+              </div>
+              <div className="reveal-content">
+                <h4>تفاصيل الأولوية مخفية حالياً</h4>
+                <p>انقر على الزر لتفعيل تقييم المشروع وعرض بيانات الأولوية الخاصة به.</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowPriority(true)}
+                className="btn-reveal-priority"
+              >
+                كشف تفاصيل وتقييم الأولوية
+              </button>
+            </div>
+          )}
 
           <div className="fields-grid">
             {Object.entries(project).map(([key, value]) => {
               // Skip formatting database metadata & hidden keys
               if (key === 'id' || key === 'project_name' || key === 'sector' || value === null || value === undefined || value === '') return null;
               
+              if (!showPriority && (key === 'priority' || key === 'priority_calculator_result' || key === 'is_priority')) {
+                return null;
+              }
+
               const label = LABELS_MAP[key];
               if (!label) return null; // Only show fields we have mapped to look professional
 
@@ -280,6 +313,29 @@ export default function ProjectDetailPage({ params }) {
               );
             })}
           </div>
+
+          {showPriority && project && project.c1 !== undefined && project.c1 !== null && (
+            <div className="radar-chart-card">
+              <h4 className="radar-chart-title">تحليل معايير مصفوفة الأولوية</h4>
+              <div style={{ width: '100%', height: '220px', marginTop: '12px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={[
+                    { subject: 'الإلزام C1', A: project.c1 || 1, fullMark: 5 },
+                    { subject: 'الاستراتيجية C2', A: project.c2 || 1, fullMark: 5 },
+                    { subject: 'قرار 921 C3', A: project.c3 || 1, fullMark: 5 },
+                    { subject: 'الاستمرارية C4', A: project.c4 || 1, fullMark: 5 },
+                    { subject: 'الجاهزية C5', A: project.c5 || 1, fullMark: 5 },
+                    { subject: 'التمويل C6', A: project.c6 || 5, fullMark: 5 }
+                  ]}>
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: "#475569", fontSize: 9, fontWeight: 700, fontFamily: "Cairo" }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 5]} tick={{ fill: "#94a3b8", fontSize: 8 }} />
+                    <Radar name="التقييم" dataKey="A" stroke="var(--color-primary)" fill="var(--color-primary)" fillOpacity={0.2} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </main>
 
         {/* Updates / Comments Feed Sidebar */}
@@ -354,6 +410,96 @@ export default function ProjectDetailPage({ params }) {
           display: flex;
           flex-direction: column;
           gap: 20px;
+        }
+
+        .radar-chart-card {
+          margin-top: 24px;
+          padding: 16px;
+          background: #ffffff;
+          border: 1px solid var(--slate-150, #e2e8f0);
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        }
+
+        .radar-chart-title {
+          font-size: 0.85rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0 0 8px 0;
+          text-align: right;
+          border-right: 3px solid var(--color-secondary);
+          padding-right: 8px;
+        }
+
+        .badge-priority {
+          background: rgba(217, 119, 6, 0.08);
+          color: #d97706;
+          border: 1px solid rgba(217, 119, 6, 0.2);
+        }
+
+        .reveal-priority-banner {
+          background: rgba(11, 114, 133, 0.03);
+          border: 1px dashed rgba(11, 114, 133, 0.2);
+          border-radius: 12px;
+          padding: 14px 18px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 20px;
+          direction: rtl;
+          text-align: right;
+          box-sizing: border-box;
+          width: 100%;
+          grid-column: 1 / -1;
+        }
+
+        .reveal-icon-container {
+          background: rgba(11, 114, 133, 0.08);
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .reveal-content {
+          flex: 1;
+        }
+
+        .reveal-content h4 {
+          font-size: 0.85rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0 0 4px 0;
+        }
+
+        .reveal-content p {
+          font-size: 0.72rem;
+          color: var(--text-secondary);
+          margin: 0;
+          line-height: 1.4;
+        }
+
+        .btn-reveal-priority {
+          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+          color: #ffffff !important;
+          font-family: var(--font-cairo), sans-serif;
+          font-size: 0.75rem;
+          padding: 8px 14px;
+          border-radius: 8px;
+          font-weight: 700;
+          white-space: nowrap;
+          border: none;
+          box-shadow: 0 2px 6px rgba(12, 166, 120, 0.15);
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+
+        .btn-reveal-priority:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(12, 166, 120, 0.22);
         }
 
         .navbar {

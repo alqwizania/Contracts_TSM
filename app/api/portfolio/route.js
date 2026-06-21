@@ -39,7 +39,8 @@ export async function GET(request) {
         topPriorityProjects,
         sectorBudgetStatsQuery,
         sCurveQuery,
-        classificationTreemapStatsQuery
+        classificationTreemapStatsQuery,
+        scatterStatsQuery
       ] = await Promise.all([
         sql`SELECT COUNT(*)::int as count, COALESCE(SUM(estimated_value), 0)::double precision as budget FROM demand_plan`,
         sql`SELECT COUNT(*)::int as count FROM tendering_procedures`,
@@ -181,6 +182,12 @@ export async function GET(request) {
           WHERE classification IS NOT NULL AND classification != ''
           GROUP BY classification
           ORDER BY value DESC
+        `,
+        sql`
+          SELECT id, project_name, budget, final_score, c4 as urgency_risk, is_priority
+          FROM priority_matrix
+          WHERE final_score IS NOT NULL
+          ORDER BY final_score DESC
         `
       ]);
 
@@ -331,7 +338,8 @@ export async function GET(request) {
         classificationStats: normalizedHeiaClass,
         sectorBudgetStats: sectorBudgetStatsQuery || [],
         sCurveStats,
-        classificationTreemapStats: classificationTreemapStatsQuery || []
+        classificationTreemapStats: classificationTreemapStatsQuery || [],
+        scatterStats: scatterStatsQuery || []
       });
 
     }
@@ -349,7 +357,12 @@ export async function GET(request) {
 
     if (stage === 'all') {
       let query = `
-        SELECT * FROM (
+        SELECT t.*,
+          COALESCE(
+            (SELECT pm.is_priority FROM priority_matrix pm WHERE LOWER(TRIM(pm.project_name)) = LOWER(TRIM(t.project_name)) LIMIT 1),
+            FALSE
+          ) as is_priority
+        FROM (
           SELECT id, project_name, sector, owning_department, funding_source as budget_source, estimated_value as total_cost, 'خطة الطلبات' as stage_name, project_classification as classification, NULL as progress_status FROM demand_plan
           UNION ALL
           SELECT id, project_name, sector, owning_department, budget_source, 0 as total_cost, 'في الطرح' as stage_name, classification, NULL as progress_status FROM tendering_procedures
@@ -363,7 +376,7 @@ export async function GET(request) {
       `;
       const params = [];
       let paramIdx = 1;
-
+      
       if (search.trim()) {
         const searchPattern = `%${search.trim()}%`;
         params.push(searchPattern);
@@ -406,6 +419,16 @@ export async function GET(request) {
     const tableName = TABLE_WHITELIST[stage];
     
     let query = `SELECT * FROM ${tableName} WHERE 1=1`;
+    if (['demand_plan', 'tendering_procedures', 'priority_contracts', 'awarding', 'contracting', 'active_contracts'].includes(stage)) {
+      query = `
+        SELECT t.*, 
+          COALESCE(
+            (SELECT pm.is_priority FROM priority_matrix pm WHERE LOWER(TRIM(pm.project_name)) = LOWER(TRIM(t.project_name)) LIMIT 1),
+            FALSE
+          ) as is_priority
+        FROM ${tableName} t WHERE 1=1
+      `;
+    }
     const params = [];
     let paramIdx = 1;
     
